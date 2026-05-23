@@ -1,1 +1,61 @@
 .env
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+pip-wheel-metadata/
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+nose2-junit.xml
+
+# PyCharm/IDE settings
+.idea/
+.vscode/
+
+# macOS
+.DS_Store
+
+# Logs and databases
+*.log
+*.sqlite3
+
+# MyPy
+.mypy_cache/
+
+# Temporary uploads and runtime files
+temp_uploads/
+instance/
+
+# Sensitive or environment files
+*.env
+*.env.*
+secrets.json
+
+# Jupyter
+.ipynb_checkpoints/
+
+# C extensions
+*.so
+
+# Static analysis
+htmlcov/
+
