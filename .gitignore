@@ -1,4 +1,8 @@
 .env
+.env.local
+.env.development
+.env.production
+.python-version
 
 # Virtual environments
 venv/
@@ -40,6 +44,14 @@ nose2-junit.xml
 
 # MyPy
 .mypy_cache/
+.ruff_cache/
+.nox/
+.tox/
+
+# Python tooling
+.pytest_cache/
+.cache/
+*.tsbuildinfo
 
 # Temporary uploads and runtime files
 temp_uploads/

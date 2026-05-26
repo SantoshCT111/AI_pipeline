@@ -2,6 +2,8 @@ from fastapi import APIRouter, UploadFile, File
 import shutil
 import os
 
+from pydantic import BaseModel
+
 
 from extraction.pdf_extraction import pdf_extraction
 from generation.engine import generate_quiz_from_text
@@ -9,7 +11,7 @@ from generation.engine import generate_quiz_from_text
 router = APIRouter()
 
 # 2. Define the route using @router instead of @app
-@router.post("/generate-quiz/")
+@router.post("/generate-quiz/from-pdf")
 async def generate_quiz(file: UploadFile = File(...)):
     """
     Receives a PDF, extracts text, generates a quiz, and cleans up.
@@ -28,3 +30,19 @@ async def generate_quiz(file: UploadFile = File(...)):
     finally:
         if os.path.exists(temp_file_path):
             os.remove(temp_file_path)
+
+
+
+# --- THE NEW CONTRACT FOR TEXT INPUT ---
+class TextInput(BaseModel):
+    raw_text: str
+    
+
+
+@router.post("/generate-quiz/from-text")
+async def generate_quiz_from_text_endpoint(text_input: TextInput):
+    """
+    Receives raw text, generates a quiz, and returns it.
+    """
+    final_quiz = generate_quiz_from_text(text_input.raw_text)
+    return final_quiz
