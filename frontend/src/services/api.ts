@@ -8,6 +8,8 @@ import type {
   QuizPublishPayload,
   QuizResponse,
   QuizResultsSummary,
+  Subject,
+  SubjectCreate,
 } from '@/types';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
@@ -82,4 +84,35 @@ export const announcementsApi = {
     }).then((response) => parseResponse<Announcement>(response));
   },
 };
+
+export const subjectApi = {
+  list(): Promise<Subject[]> {
+    return fetch(`${API_BASE}/api/v1/subjects`).then((response) =>
+      parseResponse<Subject[]>(response),
+    );
+  },
+
+  create(payload: SubjectCreate): Promise<Subject> {
+    return fetch(`${API_BASE}/api/v1/subjects`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    }).then((response) => parseResponse<Subject>(response));
+  },
+
+  delete(subjectId: number): Promise<{ message: string }> {
+    return fetch(`${API_BASE}/api/v1/subjects/${subjectId}`, {
+      method: 'DELETE',
+    }).then((response) => parseResponse<{ message: string }>(response));
+  },
+
+  updateLevels(subjectId: number, levels: { title: string }[]): Promise<Subject> {
+    return fetch(`${API_BASE}/api/v1/subjects/${subjectId}/levels`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(levels),
+    }).then((response) => parseResponse<Subject>(response));
+  },
+};
+
 

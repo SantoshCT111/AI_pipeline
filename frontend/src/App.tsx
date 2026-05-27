@@ -3,6 +3,7 @@ import { Toaster } from '@/components/ui/sonner';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import AIForgePage from '@/pages/AIForgePage';
 import AnalyticsPage from '@/pages/AnalyticsPage';
+import SubjectsPage from '@/pages/SubjectsPage';
 import CommsPage from '@/pages/CommsPage';
 
 export default function App() {
@@ -12,6 +13,7 @@ export default function App() {
         <Route element={<DashboardLayout />}>
           <Route path="/forge" element={<AIForgePage />} />
           <Route path="/analytics" element={<AnalyticsPage />} />
+          <Route path="/subjects" element={<SubjectsPage />} />
           <Route path="/comms" element={<CommsPage />} />
           <Route path="*" element={<Navigate to="/forge" replace />} />
         </Route>

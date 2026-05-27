@@ -4,7 +4,7 @@ from typing import List
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
-from database.models import Quiz, QuizResult
+from database.models import Quiz, QuizResult, Subject, Level
 from database.session import get_db
 from schemas.result_schema import (
     AnswerSubmission,
@@ -66,6 +66,35 @@ def submit_quiz_result(payload: QuizResultSubmit, db: Session = Depends(get_db))
         answers_json=json.dumps(details),
     )
     db.add(result)
+
+    # Auto-progress levels if this quiz is linked to a specific subject level
+    if quiz.level_number is not None:
+        classroom = quiz.classroom
+        subject = db.query(Subject).filter(Subject.name.ilike(classroom.subject)).first()
+        if subject:
+            level = db.query(Level).filter(Level.subject_id == subject.id, Level.level_number == quiz.level_number).first()
+            if level:
+                level.is_completed = True
+                # Calculate stars based on score
+                if score >= 90:
+                    level.stars = 3
+                elif score >= 70:
+                    level.stars = 2
+                elif score >= 50:
+                    level.stars = 1
+                else:
+                    level.stars = 0
+
+                # Unlock the next level
+                next_level_num = quiz.level_number + 1
+                next_level = db.query(Level).filter(Level.subject_id == subject.id, Level.level_number == next_level_num).first()
+                if next_level:
+                    next_level.is_unlocked = True
+
+                # Progress overall subject target level if applicable
+                if next_level_num > subject.level:
+                    subject.level = next_level_num
+
     db.commit()
     db.refresh(result)
 

@@ -7,6 +7,7 @@ import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 const pageTitles: Record<string, string> = {
   '/forge': 'AI Forge',
   '/analytics': 'Analytics',
+  '/subjects': 'Curriculum Builder',
   '/comms': 'Messages',
 };
 

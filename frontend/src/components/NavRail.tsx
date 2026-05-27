@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { to: '/forge', label: 'Forge', icon: Wand2 },
   { to: '/analytics', label: 'Analytics', icon: BarChart3 },
+  { to: '/subjects', label: 'Subjects', icon: BookOpen },
   { to: '/comms', label: 'Messages', icon: MessageSquare },
 ];
 

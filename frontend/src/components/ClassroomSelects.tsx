@@ -12,9 +12,12 @@ import {
 interface ClassroomSelectsProps {
   values: ClassroomFilter;
   onChange: (values: ClassroomFilter) => void;
+  subjectsList?: readonly string[] | string[];
 }
 
-export default function ClassroomSelects({ values, onChange }: ClassroomSelectsProps) {
+export default function ClassroomSelects({ values, onChange, subjectsList }: ClassroomSelectsProps) {
+  const activeSubjects = subjectsList || SUBJECTS;
+
   return (
     <div className="grid gap-4 sm:grid-cols-3">
       <div className="space-y-2">
@@ -27,7 +30,7 @@ export default function ClassroomSelects({ values, onChange }: ClassroomSelectsP
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {SUBJECTS.map((subject) => (
+            {activeSubjects.map((subject) => (
               <SelectItem key={subject} value={subject}>
                 {subject}
               </SelectItem>

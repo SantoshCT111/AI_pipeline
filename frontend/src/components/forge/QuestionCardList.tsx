@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { RotateCcw, Send } from 'lucide-react';
-import type { ClassroomFilter, QuizTask } from '@/types';
+import type { ClassroomFilter, QuizTask, Subject, QuizResponse } from '@/types';
 import { GRADES, SECTIONS, SUBJECTS } from '@/types';
-import { quizApi } from '@/services/api';
+import { quizApi, subjectApi } from '@/services/api';
 import ClassroomSelects from '@/components/ClassroomSelects';
 import QuestionCard from './QuestionCard';
 import { Button } from '@/components/ui/button';
@@ -19,6 +19,13 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Separator } from '@/components/ui/separator';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface QuestionCardListProps {
   tasks: QuizTask[];
@@ -41,6 +48,44 @@ export default function QuestionCardList({
     grade: GRADES[2],
     section: SECTIONS[1],
   });
+  const [dbSubjects, setDbSubjects] = useState<Subject[]>([]);
+  const [existingQuizzes, setExistingQuizzes] = useState<QuizResponse[]>([]);
+  const [levelNumber, setLevelNumber] = useState<number | null>(null);
+
+  useEffect(() => {
+    subjectApi.list().then((data) => {
+      setDbSubjects(data);
+      if (data.length > 0) {
+        setClassroom((prev) => ({ ...prev, subject: data[0].name }));
+      }
+    }).catch(() => {});
+
+    quizApi.list().then((data) => {
+      setExistingQuizzes(data);
+    }).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    if (!classroom.subject || dbSubjects.length === 0) return;
+    const activeSubjectObj = dbSubjects.find((s) => s.name === classroom.subject);
+    if (!activeSubjectObj) return;
+
+    const subjectQuizzes = existingQuizzes.filter(
+      (q) => q.subject.toLowerCase() === classroom.subject.toLowerCase()
+    );
+
+    const levelsWithQuizzes = new Set(subjectQuizzes.map((q) => q.level_number).filter((n): n is number => n !== null && n !== undefined));
+    const nextLevelObj = activeSubjectObj.levels.find((l) => !levelsWithQuizzes.has(l.level_number));
+
+    if (nextLevelObj) {
+      setLevelNumber(nextLevelObj.level_number);
+    } else {
+      setLevelNumber(activeSubjectObj.levels.length > 0 ? 1 : null);
+    }
+  }, [classroom.subject, dbSubjects, existingQuizzes]);
+
+  const activeSubjectObj = dbSubjects.find((s) => s.name === classroom.subject);
+  const subjectLevels = activeSubjectObj ? activeSubjectObj.levels : [];
 
   const mcCount = tasks.filter((t) => t.question_type === 'multiple_choice').length;
   const tfCount = tasks.filter((t) => t.question_type === 'true_false').length;
@@ -61,6 +106,7 @@ export default function QuestionCardList({
       await quizApi.publish({
         title: quizTitle.trim(),
         ...classroom,
+        level_number: levelNumber,
         tasks,
       });
       toast.success(
@@ -149,7 +195,36 @@ export default function QuestionCardList({
               />
             </div>
             <Separator />
-            <ClassroomSelects values={classroom} onChange={setClassroom} />
+            <ClassroomSelects
+              values={classroom}
+              onChange={(val) => {
+                setClassroom(val);
+                setLevelNumber(null);
+              }}
+              subjectsList={dbSubjects.map((s) => s.name)}
+            />
+            <div className="space-y-2">
+              <Label>App Subject Level (Target Level)</Label>
+              <Select
+                value={levelNumber?.toString() || 'none'}
+                onValueChange={(val) => setLevelNumber(val === 'none' ? null : parseInt(val))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a specific level (optional)..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Default / Global (Shows in Lehrer-Quizzes)</SelectItem>
+                  {subjectLevels.map((lvl) => (
+                    <SelectItem key={lvl.level_number} value={lvl.level_number.toString()}>
+                      Level {lvl.level_number}: {lvl.title}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                Choose a level to directly map these questions to that card's level in the mobile app tree.
+              </p>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPublishOpen(false)}>

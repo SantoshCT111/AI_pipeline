@@ -18,6 +18,7 @@ class QuizPublishRequest(BaseModel):
     subject: str
     grade: str
     section: str
+    level_number: int | None = None
     tasks: List[QuizTaskSchema]
 
 
@@ -29,5 +30,6 @@ class QuizResponse(BaseModel):
     subject: str
     grade: str
     section: str
+    level_number: int | None = None
     tasks: List[QuizTaskSchema]
     published_at: datetime

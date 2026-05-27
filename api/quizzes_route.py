@@ -37,6 +37,7 @@ def publish_quiz(payload: QuizPublishRequest, db: Session = Depends(get_db)):
     quiz = Quiz(
         title=payload.title,
         classroom_id=classroom.id,
+        level_number=payload.level_number,
         tasks_json=json.dumps([task.model_dump() for task in payload.tasks]),
     )
     db.add(quiz)
@@ -49,6 +50,7 @@ def publish_quiz(payload: QuizPublishRequest, db: Session = Depends(get_db)):
         subject=classroom.subject,
         grade=classroom.grade,
         section=classroom.section,
+        level_number=quiz.level_number,
         tasks=payload.tasks,
         published_at=quiz.published_at,
     )
@@ -83,6 +85,7 @@ def list_quizzes(
                 subject=classroom.subject,
                 grade=classroom.grade,
                 section=classroom.section,
+                level_number=quiz.level_number,
                 tasks=tasks,
                 published_at=quiz.published_at,
             )

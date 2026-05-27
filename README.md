@@ -26,8 +26,16 @@ OPENAI_API_KEY=your_key_here
 Start the API:
 
 ```bash
-uvicorn main:app --reload --port 8000
+uvicorn main:app --reload --host 0.0.0.0 --port 8000
 ```
+
+For the web app, CORS allows `localhost:5173` by default. To test from another device (e.g. Flutter on a phone), add your machine IP in `.env`:
+
+```
+CORS_ORIGINS=http://localhost:5173,http://192.168.1.10:5173
+```
+
+Native Flutter HTTP calls are not subject to browser CORS; this only affects the teacher web UI.
 
 ### 2. Frontend
 

@@ -4,7 +4,7 @@ import { toast } from 'sonner';
 import { BarChart3, Users, Trophy, Clock } from 'lucide-react';
 import type { AnalyticsSummary, ClassroomFilter, QuizResponse, QuizResultsSummary } from '@/types';
 import { GRADES, SECTIONS, SUBJECTS } from '@/types';
-import { analyticsApi, quizApi, resultsApi } from '@/services/api';
+import { analyticsApi, quizApi, resultsApi, subjectApi } from '@/services/api';
 import ClassroomSelects from '@/components/ClassroomSelects';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +31,7 @@ export default function AnalyticsPage() {
     grade: GRADES[2],
     section: SECTIONS[1],
   });
+  const [dbSubjects, setDbSubjects] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<AnalyticsSummary | null>(null);
 
@@ -40,8 +41,15 @@ export default function AnalyticsPage() {
   const [resultsSummary, setResultsSummary] = useState<QuizResultsSummary | null>(null);
   const [loadingResults, setLoadingResults] = useState(false);
 
-  // Fetch published quizzes on mount
+  // Fetch published quizzes and subjects on mount
   useEffect(() => {
+    subjectApi.list().then((data) => {
+      const names = data.map((s) => s.name);
+      setDbSubjects(names);
+      if (names.length > 0) {
+        setClassroom((prev) => ({ ...prev, subject: names[0] }));
+      }
+    }).catch(() => {});
     quizApi.list().then(setQuizzes).catch(() => {});
   }, []);
 
@@ -206,7 +214,7 @@ export default function AnalyticsPage() {
           <CardDescription>Choose subject, grade, and section</CardDescription>
         </CardHeader>
         <CardContent>
-          <ClassroomSelects values={classroom} onChange={setClassroom} />
+          <ClassroomSelects values={classroom} onChange={setClassroom} subjectsList={dbSubjects} />
           <Button className="mt-6" onClick={handleView} disabled={loading}>
             {loading ? 'Loading…' : 'View analytics'}
           </Button>
