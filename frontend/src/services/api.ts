@@ -7,6 +7,7 @@ import type {
   QuizBundle,
   QuizPublishPayload,
   QuizResponse,
+  QuizResultsSummary,
 } from '@/types';
 
 const API_BASE = import.meta.env.VITE_API_URL ?? '';
@@ -58,6 +59,14 @@ export const analyticsApi = {
   },
 };
 
+export const resultsApi = {
+  getQuizResults(quizId: number): Promise<QuizResultsSummary> {
+    return fetch(`${API_BASE}/api/v1/quiz-results/${quizId}`).then((response) =>
+      parseResponse<QuizResultsSummary>(response),
+    );
+  },
+};
+
 export const announcementsApi = {
   list(): Promise<Announcement[]> {
     return fetch(`${API_BASE}/api/v1/announcements`).then((response) =>
@@ -73,3 +82,4 @@ export const announcementsApi = {
     }).then((response) => parseResponse<Announcement>(response));
   },
 };
+

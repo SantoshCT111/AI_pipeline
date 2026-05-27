@@ -1,15 +1,23 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { toast } from 'sonner';
-import { BarChart3 } from 'lucide-react';
-import type { AnalyticsSummary, ClassroomFilter } from '@/types';
+import { BarChart3, Users, Trophy, Clock } from 'lucide-react';
+import type { AnalyticsSummary, ClassroomFilter, QuizResponse, QuizResultsSummary } from '@/types';
 import { GRADES, SECTIONS, SUBJECTS } from '@/types';
-import { analyticsApi } from '@/services/api';
+import { analyticsApi, quizApi, resultsApi } from '@/services/api';
 import ClassroomSelects from '@/components/ClassroomSelects';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 
 const statusVariant: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
   Stable: 'secondary',
@@ -26,6 +34,17 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<AnalyticsSummary | null>(null);
 
+  // ── Student results state ──
+  const [quizzes, setQuizzes] = useState<QuizResponse[]>([]);
+  const [selectedQuizId, setSelectedQuizId] = useState<string>('');
+  const [resultsSummary, setResultsSummary] = useState<QuizResultsSummary | null>(null);
+  const [loadingResults, setLoadingResults] = useState(false);
+
+  // Fetch published quizzes on mount
+  useEffect(() => {
+    quizApi.list().then(setQuizzes).catch(() => {});
+  }, []);
+
   const handleView = async () => {
     setLoading(true);
     try {
@@ -36,6 +55,20 @@ export default function AnalyticsPage() {
       setData(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleViewResults = async () => {
+    if (!selectedQuizId) return;
+    setLoadingResults(true);
+    try {
+      const summary = await resultsApi.getQuizResults(Number(selectedQuizId));
+      setResultsSummary(summary);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to load student results.');
+      setResultsSummary(null);
+    } finally {
+      setLoadingResults(false);
     }
   };
 
@@ -52,13 +85,124 @@ export default function AnalyticsPage() {
         <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground font-medium mb-3">Analytics</p>
         <h2 className="font-serif text-3xl font-medium tracking-tight">Class performance at a glance.</h2>
         <p className="mt-3 text-muted-foreground leading-relaxed">
-          Select a class to see accuracy, completion, and topics that need attention.
+          View class analytics or check how students performed on individual quizzes.
         </p>
       </div>
 
+      {/* ── STUDENT RESULTS SECTION ── */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Filter</CardTitle>
+          <div className="flex items-center gap-2 text-primary">
+            <Users size={16} />
+            <CardDescription className="text-primary font-medium m-0">Live results</CardDescription>
+          </div>
+          <CardTitle className="text-xl">Student quiz results</CardTitle>
+          <CardDescription>Select a published quiz to see who took it and how they scored.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-end gap-3">
+            <div className="flex-1 space-y-2">
+              <Select value={selectedQuizId} onValueChange={setSelectedQuizId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choose a quiz…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {quizzes.map((q) => (
+                    <SelectItem key={q.id} value={String(q.id)}>
+                      {q.title} — {q.subject} · {q.grade}
+                    </SelectItem>
+                  ))}
+                  {quizzes.length === 0 && (
+                    <SelectItem value="none" disabled>
+                      No quizzes published yet
+                    </SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={handleViewResults} disabled={!selectedQuizId || loadingResults}>
+              {loadingResults ? 'Loading…' : 'View results'}
+            </Button>
+          </div>
+
+          {loadingResults && (
+            <div className="mt-6 space-y-3">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-14 rounded-lg" />
+              ))}
+            </div>
+          )}
+
+          {resultsSummary && !loadingResults && (
+            <div className="mt-6 space-y-4">
+              {/* Summary cards */}
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-lg border bg-muted/30 px-4 py-3">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Users size={14} />
+                    <span className="text-xs">Attempts</span>
+                  </div>
+                  <p className="mt-1 text-2xl font-medium tabular-nums">{resultsSummary.total_attempts}</p>
+                </div>
+                <div className="rounded-lg border bg-muted/30 px-4 py-3">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Trophy size={14} />
+                    <span className="text-xs">Average score</span>
+                  </div>
+                  <p className="mt-1 text-2xl font-medium tabular-nums">{Math.round(resultsSummary.average_score)}%</p>
+                </div>
+                <div className="rounded-lg border bg-muted/30 px-4 py-3">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <BarChart3 size={14} />
+                    <span className="text-xs">Quiz</span>
+                  </div>
+                  <p className="mt-1 text-sm font-medium truncate">{resultsSummary.quiz_title}</p>
+                </div>
+              </div>
+
+              {resultsSummary.results.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-8">No students have taken this quiz yet.</p>
+              ) : (
+                <div className="divide-y divide-border rounded-lg border overflow-hidden">
+                  {/* Table header */}
+                  <div className="grid grid-cols-4 gap-4 px-4 py-2.5 bg-muted/40 text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <span>Student</span>
+                    <span>Score</span>
+                    <span>Correct</span>
+                    <span>Completed</span>
+                  </div>
+                  {/* Table rows */}
+                  {resultsSummary.results.map((r) => (
+                    <div key={r.id} className="grid grid-cols-4 gap-4 px-4 py-3 items-center hover:bg-muted/20 transition-colors">
+                      <span className="font-medium truncate">{r.student_name}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="tabular-nums font-medium">{Math.round(r.score)}%</span>
+                        <Badge variant={r.score >= 70 ? 'default' : r.score >= 40 ? 'secondary' : 'destructive'}>
+                          {r.score >= 70 ? '✓' : r.score >= 40 ? '~' : '✗'}
+                        </Badge>
+                      </div>
+                      <span className="text-sm text-muted-foreground tabular-nums">
+                        {r.correct_answers}/{r.total_questions}
+                      </span>
+                      <span className="text-sm text-muted-foreground flex items-center gap-1">
+                        <Clock size={12} />
+                        {new Date(r.completed_at).toLocaleDateString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Separator />
+
+      {/* ── CLASS ANALYTICS SECTION (existing) ── */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Class analytics</CardTitle>
           <CardDescription>Choose subject, grade, and section</CardDescription>
         </CardHeader>
         <CardContent>

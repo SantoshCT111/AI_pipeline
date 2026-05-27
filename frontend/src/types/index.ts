@@ -62,3 +62,23 @@ export type AnnouncementCreate = {
 export const SUBJECTS = ['Mathematics', 'Science', 'English', 'History'] as const;
 export const GRADES = ['Grade 6', 'Grade 7', 'Grade 8', 'Grade 9'] as const;
 export const SECTIONS = ['Section A', 'Section B', 'Section C'] as const;
+
+export type QuizResultResponse = {
+  id: number;
+  quiz_id: number;
+  quiz_title: string;
+  student_name: string;
+  score: number;
+  total_questions: number;
+  correct_answers: number;
+  completed_at: string;
+};
+
+export type QuizResultsSummary = {
+  quiz_id: number;
+  quiz_title: string;
+  total_attempts: number;
+  average_score: number;
+  results: QuizResultResponse[];
+};
+
