@@ -56,6 +56,9 @@ nose2-junit.xml
 # Temporary uploads and runtime files
 temp_uploads/
 instance/
+teacher_hub.db
+edu.db
+temp_*
 
 # Sensitive or environment files
 *.env

@@ -1,101 +1,162 @@
 import { useState } from 'react';
+import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { toast } from 'sonner';
+import { BarChart3 } from 'lucide-react';
+import type { AnalyticsSummary, ClassroomFilter } from '@/types';
+import { GRADES, SECTIONS, SUBJECTS } from '@/types';
+import { analyticsApi } from '@/services/api';
+import ClassroomSelects from '@/components/ClassroomSelects';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+
+const statusVariant: Record<string, 'default' | 'secondary' | 'outline' | 'destructive'> = {
+  Stable: 'secondary',
+  Improving: 'default',
+  'Needs review': 'destructive',
+};
 
 export default function AnalyticsPage() {
-  const [subject, setSubject] = useState('Mathematics');
-  const [className, setClassName] = useState('Grade 8');
-  const [section, setSection] = useState('Section B');
-  const [showData, setShowData] = useState(false);
+  const [classroom, setClassroom] = useState<ClassroomFilter>({
+    subject: SUBJECTS[0],
+    grade: GRADES[2],
+    section: SECTIONS[1],
+  });
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState<AnalyticsSummary | null>(null);
+
+  const handleView = async () => {
+    setLoading(true);
+    try {
+      const summary = await analyticsApi.getSummary(classroom);
+      setData(summary);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to load analytics.');
+      setData(null);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const chartData =
+    data?.topics.map((t) => ({
+      name: t.topic.length > 14 ? `${t.topic.slice(0, 12)}…` : t.topic,
+      accuracy: t.accuracy,
+      fullName: t.topic,
+    })) ?? [];
 
   return (
-    <div className="page-grid page-grid--single">
-      <section className="hero-card page-section hero-card--analytics">
-        <div className="teacher-filter-panel">
-          <div className="teacher-filter-grid teacher-filter-grid--inline">
-            <label className="teacher-filter-field">
-              <span>Subject</span>
-              <select value={subject} onChange={(e) => setSubject(e.target.value)}>
-                <option>Mathematics</option>
-                <option>Science</option>
-                <option>English</option>
-                <option>History</option>
-              </select>
-            </label>
+    <div className="animate-fade-in space-y-8">
+      <div className="max-w-2xl">
+        <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground font-medium mb-3">Analytics</p>
+        <h2 className="font-serif text-3xl font-medium tracking-tight">Class performance at a glance.</h2>
+        <p className="mt-3 text-muted-foreground leading-relaxed">
+          Select a class to see accuracy, completion, and topics that need attention.
+        </p>
+      </div>
 
-            <label className="teacher-filter-field">
-              <span>Class</span>
-              <select value={className} onChange={(e) => setClassName(e.target.value)}>
-                <option>Grade 6</option>
-                <option>Grade 7</option>
-                <option>Grade 8</option>
-                <option>Grade 9</option>
-              </select>
-            </label>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Filter</CardTitle>
+          <CardDescription>Choose subject, grade, and section</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ClassroomSelects values={classroom} onChange={setClassroom} />
+          <Button className="mt-6" onClick={handleView} disabled={loading}>
+            {loading ? 'Loading…' : 'View analytics'}
+          </Button>
+        </CardContent>
+      </Card>
 
-            <label className="teacher-filter-field">
-              <span>Section</span>
-              <select value={section} onChange={(e) => setSection(e.target.value)}>
-                <option>Section A</option>
-                <option>Section B</option>
-                <option>Section C</option>
-              </select>
-            </label>
+      {loading && (
+        <div className="grid gap-4 sm:grid-cols-3">
+          {[1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-28 rounded-xl" />
+          ))}
+        </div>
+      )}
 
-            <button className="primary-button teacher-filter-action" onClick={() => setShowData(true)}>
-              Show data
-            </button>
+      {!loading && !data && (
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <BarChart3 size={32} className="text-muted-foreground mb-4" />
+            <p className="text-sm text-muted-foreground max-w-sm">
+              Select a class and tap View analytics to see how students are performing.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {data && !loading && (
+        <div className="space-y-6 animate-fade-in">
+          <p className="text-sm text-muted-foreground">
+            {data.subject} · {data.grade} · {data.section}
+          </p>
+
+          <div className="grid gap-4 sm:grid-cols-3">
+            {[
+              { label: 'Average score', value: `${Math.round(data.avg_score)}%` },
+              { label: 'Completion rate', value: `${Math.round(data.completion_rate)}%` },
+              { label: 'Students', value: data.students_count.toString() },
+            ].map((stat) => (
+              <Card key={stat.label}>
+                <CardContent className="pt-6">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wider">{stat.label}</p>
+                  <p className="mt-2 font-serif text-3xl font-medium tabular-nums">{stat.value}</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
 
-          {showData ? (
-            <div className="teacher-data-panel">
-              <div className="teacher-data-panel__header">
-                <div>
-                  <p className="eyebrow">Selected view</p>
-                  <h3>{subject} · {className} · {section}</h3>
-                </div>
-                <span className="pill pill--subtle">Live selection</span>
-              </div>
+          {chartData.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Topic accuracy</CardTitle>
+              </CardHeader>
+              <CardContent className="h-64">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="var(--muted-foreground)" />
+                    <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} stroke="var(--muted-foreground)" />
+                    <Tooltip
+                      formatter={(value) => [`${value ?? 0}%`, 'Accuracy']}
+                      labelFormatter={(_, payload) =>
+                        (payload?.[0]?.payload as { fullName?: string } | undefined)?.fullName ?? ''
+                      }
+                      contentStyle={{
+                        borderRadius: '8px',
+                        border: '1px solid var(--border)',
+                        background: 'var(--card)',
+                      }}
+                    />
+                    <Bar dataKey="accuracy" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          )}
 
-              <div className="teacher-data-grid">
-                <article className="teacher-data-card">
-                  <span>Average score</span>
-                  <strong>78%</strong>
-                </article>
-                <article className="teacher-data-card">
-                  <span>Completion rate</span>
-                  <strong>92%</strong>
-                </article>
-                <article className="teacher-data-card">
-                  <span>Students reviewed</span>
-                  <strong>847</strong>
-                </article>
-              </div>
-
-              <div className="teacher-data-table">
-                <div className="teacher-data-table__head">
-                  <span>Topic</span>
-                  <span>Status</span>
-                  <span>Accuracy</span>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Topics</CardTitle>
+            </CardHeader>
+            <CardContent className="divide-y divide-border">
+              {data.topics.map((topic) => (
+                <div key={topic.topic} className="flex items-center justify-between py-3 first:pt-0 last:pb-0">
+                  <span className="font-medium">{topic.topic}</span>
+                  <div className="flex items-center gap-3">
+                    <Badge variant={statusVariant[topic.status] ?? 'outline'}>{topic.status}</Badge>
+                    <span className="text-sm tabular-nums text-muted-foreground w-12 text-right">
+                      {Math.round(topic.accuracy)}%
+                    </span>
+                  </div>
                 </div>
-                <div className="teacher-data-table__row">
-                  <strong>Fractions</strong>
-                  <span>Needs review</span>
-                  <span>61%</span>
-                </div>
-                <div className="teacher-data-table__row">
-                  <strong>Geometry</strong>
-                  <span>Stable</span>
-                  <span>84%</span>
-                </div>
-                <div className="teacher-data-table__row">
-                  <strong>Word problems</strong>
-                  <span>Improving</span>
-                  <span>73%</span>
-                </div>
-              </div>
-            </div>
-          ) : null}
+              ))}
+            </CardContent>
+          </Card>
         </div>
-      </section>
+      )}
     </div>
   );
 }

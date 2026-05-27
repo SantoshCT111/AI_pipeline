@@ -1,11 +1,30 @@
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from api.generate_route import router as generate_router
 
-# 1. Initialize the Temple
+from api.generate_route import router as generate_router
+from api.quizzes_route import router as quizzes_router
+from api.analytics_route import router as analytics_router
+from api.announcements_route import router as announcements_router
+from database import Base, SessionLocal, engine, seed_database
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    try:
+        seed_database(db)
+    finally:
+        db.close()
+    yield
+
+
 app = FastAPI(
-    title="London AI Pipeline",
-    description="Backend for generating gamified educational tasks."
+    title="Teacher Hub",
+    description="Backend for quiz generation, analytics, and announcements.",
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -21,13 +40,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 2. Connect the Sub-Dojos!
-# We can even add a prefix, so the URL becomes /api/v1/generate-quiz/
-app.include_router(
-    generate_router, 
-    prefix="/api/v1", 
-    tags=["Quiz Generation"]
-)
-
-# If you add user profiles later, you just do:
-# app.include_router(users_router, prefix="/api/v1/users")
+app.include_router(generate_router, prefix="/api/v1", tags=["Quiz Generation"])
+app.include_router(quizzes_router, prefix="/api/v1", tags=["Quizzes"])
+app.include_router(analytics_router, prefix="/api/v1", tags=["Analytics"])
+app.include_router(announcements_router, prefix="/api/v1", tags=["Announcements"])

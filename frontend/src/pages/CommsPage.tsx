@@ -1,128 +1,178 @@
-import { Bell, Send, ShieldAlert, Sparkles } from 'lucide-react';
-import type { AnnouncementPriority } from '../types';
-import { useState } from 'react';
-
-type Announcement = {
-  priority: AnnouncementPriority;
-  title: string;
-  body: string;
-  time: string;
-  readBy: number;
-};
+import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { Send } from 'lucide-react';
+import type { Announcement, AnnouncementPriority } from '@/types';
+import { announcementsApi } from '@/services/api';
+import { formatRelativeTime } from '@/lib/format';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const PRIORITIES: AnnouncementPriority[] = ['Normal', 'Important', 'Urgent'];
 
-const PRIORITY_STYLES: Record<AnnouncementPriority, { pill: string; border: string }> = {
-  Normal: { pill: 'status-pill status-pill--neutral', border: 'accent-neutral' },
-  Important: { pill: 'status-pill status-pill--info', border: 'accent-info' },
-  Urgent: { pill: 'status-pill status-pill--danger', border: 'accent-danger' },
+const priorityBadge: Record<AnnouncementPriority, 'default' | 'secondary' | 'destructive'> = {
+  Normal: 'secondary',
+  Important: 'default',
+  Urgent: 'destructive',
 };
-
-const MOCK_ANNOUNCEMENTS: Announcement[] = [
-  {
-    priority: 'Normal',
-    title: 'Field Trip Permission Slips',
-    body: 'Please ensure all permission slips for the science museum trip on Friday are signed and returned by Wednesday.',
-    time: '2 hours ago',
-    readBy: 42,
-  },
-  {
-    priority: 'Important',
-    title: 'Parent-Teacher Conference Schedule',
-    body: 'The spring parent-teacher conferences will be held next week. Please book your preferred time slot through the school portal.',
-    time: 'Yesterday',
-    readBy: 67,
-  },
-  {
-    priority: 'Urgent',
-    title: 'School Closure - Weather Alert',
-    body: 'Due to the severe weather forecast, school will be closed tomorrow. All classes will move to online learning.',
-    time: '3 days ago',
-    readBy: 89,
-  },
-];
 
 export default function CommsPage() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [priority, setPriority] = useState<AnnouncementPriority>('Normal');
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    announcementsApi
+      .list()
+      .then(setAnnouncements)
+      .catch((err) => toast.error(err instanceof Error ? err.message : 'Failed to load messages.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleSend = async () => {
+    if (!title.trim() || !body.trim()) return;
+    setSending(true);
+    try {
+      const created = await announcementsApi.create({
+        title: title.trim(),
+        body: body.trim(),
+        priority,
+      });
+      setAnnouncements((prev) => [created, ...prev]);
+      setTitle('');
+      setBody('');
+      setPriority('Normal');
+      toast.success('Announcement sent.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to send announcement.');
+    } finally {
+      setSending(false);
+    }
+  };
 
   return (
-    <div className="page-grid page-grid--single">
-      <section className="hero-card page-section hero-card--comms">
-        <div>
-          <div className="section-kicker">
-            <Bell size={14} /> Communication Bridge
-          </div>
-          <h2 className="hero-title">Draft announcements parents can scan fast and trust immediately.</h2>
-          <p className="hero-copy">Write calm, clear updates with deliberate hierarchy, priority tags, and a layout that keeps the message itself in focus.</p>
-        </div>
-        <div className="hero-stat-strip hero-stat-strip--three">
-          <div><span>Audience</span><strong>Parents</strong></div>
-          <div><span>Tone</span><strong>Clear</strong></div>
-          <div><span>Priority</span><strong>{priority}</strong></div>
-        </div>
-      </section>
+    <div className="animate-fade-in space-y-8">
+      <div className="max-w-2xl">
+        <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground font-medium mb-3">Messages</p>
+        <h2 className="font-serif text-3xl font-medium tracking-tight">Clear updates for parents.</h2>
+        <p className="mt-3 text-muted-foreground leading-relaxed">
+          Write calm, scannable announcements. Preview how parents will see them before sending.
+        </p>
+      </div>
 
-      <section className="page-grid page-grid--two">
-        <article className="page-section section-card">
-          <div className="section-header">
-            <div>
-              <p className="eyebrow">Compose</p>
-              <h3>Announcement draft</h3>
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Compose</CardTitle>
+            <CardDescription>Draft your announcement</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="title">Title</Label>
+              <Input
+                id="title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Announcement title"
+              />
             </div>
-            <span className="pill pill--subtle"><Sparkles size={12} /> Teacher-ready</span>
-          </div>
-
-          <label className="field-label" htmlFor="announcement-title">Title</label>
-          <input id="announcement-title" className="input" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Announcement title..." />
-
-          <label className="field-label" htmlFor="announcement-body">Message</label>
-          <textarea id="announcement-body" className="input input--textarea input--large" value={body} onChange={(e) => setBody(e.target.value)} placeholder="Write your announcement here..." />
-
-          <div className="compose-footer">
-            <div className="priority-toggle">
-              {PRIORITIES.map((item) => (
-                <button key={item} className={`priority-toggle__button ${priority === item ? 'priority-toggle__button--active' : ''}`} onClick={() => setPriority(item)} type="button">
-                  {item}
-                </button>
-              ))}
+            <div className="space-y-2">
+              <Label htmlFor="body">Message</Label>
+              <Textarea
+                id="body"
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                placeholder="Write your message…"
+                className="min-h-[140px]"
+              />
             </div>
-            <button className="primary-button" type="button" disabled={!title || !body}>
-              <Send size={16} /> Send
-            </button>
-          </div>
-        </article>
-
-        <article className="page-section section-card">
-          <div className="section-header">
-            <div>
-              <p className="eyebrow">Recent announcements</p>
-              <h3>What parents are seeing</h3>
+            <div className="space-y-2">
+              <Label>Priority</Label>
+              <ToggleGroup
+                type="single"
+                value={priority}
+                onValueChange={(v) => v && setPriority(v as AnnouncementPriority)}
+                className="justify-start"
+              >
+                {PRIORITIES.map((p) => (
+                  <ToggleGroupItem key={p} value={p} className="px-4">
+                    {p}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
             </div>
-            <ShieldAlert size={16} className="muted-icon" />
-          </div>
+            <Button
+              onClick={handleSend}
+              disabled={!title.trim() || !body.trim() || sending}
+              className="w-full sm:w-auto"
+            >
+              <Send size={16} />
+              {sending ? 'Sending…' : 'Send announcement'}
+            </Button>
+          </CardContent>
+        </Card>
 
-          <div className="announcement-list">
-            {MOCK_ANNOUNCEMENTS.map((announcement) => (
-              <article key={announcement.title} className={`announcement-card ${PRIORITY_STYLES[announcement.priority].border}`}>
-                <div className="announcement-card__top">
-                  <h4>{announcement.title}</h4>
-                  <div>
-                    <span className={PRIORITY_STYLES[announcement.priority].pill}>{announcement.priority}</span>
-                    <small>{announcement.time}</small>
-                  </div>
-                </div>
-                <p>{announcement.body}</p>
-                <footer>
-                  <span>Read by {announcement.readBy} parents</span>
-                  <span className="dots"><i /><i /><i /></span>
-                </footer>
-              </article>
-            ))}
-          </div>
-        </article>
-      </section>
+        <Card className="bg-muted/30">
+          <CardHeader>
+            <CardTitle className="text-lg">Parent preview</CardTitle>
+            <CardDescription>How families will see this</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-lg border border-border bg-card p-5 shadow-sm">
+              <div className="flex items-start justify-between gap-2 mb-3">
+                <h3 className="font-serif text-lg font-medium">
+                  {title.trim() || 'Your title appears here'}
+                </h3>
+                <Badge variant={priorityBadge[priority]}>{priority}</Badge>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                {body.trim() || 'Your message will appear here as parents read it on their phones.'}
+              </p>
+              <Separator className="my-4" />
+              <p className="text-xs text-muted-foreground">From Teacher Hub · Just now</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Recent announcements</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {loading &&
+            [1, 2, 3].map((i) => <Skeleton key={i} className="h-24 w-full rounded-lg" />)}
+          {!loading && announcements.length === 0 && (
+            <p className="text-sm text-muted-foreground py-8 text-center">No announcements yet.</p>
+          )}
+          {announcements.map((item) => (
+            <div
+              key={item.id}
+              className="rounded-lg border border-border bg-card p-4 space-y-2"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <h4 className="font-medium">{item.title}</h4>
+                <Badge variant={priorityBadge[item.priority as AnnouncementPriority]}>
+                  {item.priority}
+                </Badge>
+              </div>
+              <p className="text-sm text-muted-foreground leading-relaxed">{item.body}</p>
+              <p className="text-xs text-muted-foreground">
+                {formatRelativeTime(item.created_at)} · Read by {item.read_count} parents
+              </p>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
     </div>
   );
 }

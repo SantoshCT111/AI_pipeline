@@ -1,48 +1,36 @@
-from fastapi import APIRouter, UploadFile, File
-import shutil
 import os
+import shutil
+import tempfile
+from pathlib import Path
 
-from pydantic import BaseModel
+from fastapi import APIRouter, File, UploadFile
 
-
-from extraction.pdf_extraction import pdf_extraction
+from extraction.pdf_extraction import extract_pdf_text
 from generation.engine import generate_quiz_from_text
+from schemas.generate_schema import TextInput
 
 router = APIRouter()
 
-# 2. Define the route using @router instead of @app
+
 @router.post("/generate-quiz/from-pdf")
-async def generate_quiz(file: UploadFile = File(...)):
-    """
-    Receives a PDF, extracts text, generates a quiz, and cleans up.
-    """
-    temp_file_path = f"temp_{file.filename}"
-    
-    with open(temp_file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-        
+async def generate_quiz_from_pdf(file: UploadFile = File(...)):
+    """Extract text from a PDF and generate a quiz."""
+    suffix = Path(file.filename or "upload.pdf").suffix or ".pdf"
+    temp_path = None
+
     try:
-        text_chunks = pdf_extraction(temp_file_path)
-        complete_text = "\n".join(text_chunks)
-        final_quiz = generate_quiz_from_text(complete_text)
-        return final_quiz
-        
+        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+            shutil.copyfileobj(file.file, temp_file)
+            temp_path = temp_file.name
+
+        text_chunks = extract_pdf_text(temp_path)
+        return generate_quiz_from_text("\n".join(text_chunks))
     finally:
-        if os.path.exists(temp_file_path):
-            os.remove(temp_file_path)
-
-
-
-# --- THE NEW CONTRACT FOR TEXT INPUT ---
-class TextInput(BaseModel):
-    raw_text: str
-    
+        if temp_path and os.path.exists(temp_path):
+            os.remove(temp_path)
 
 
 @router.post("/generate-quiz/from-text")
 async def generate_quiz_from_text_endpoint(text_input: TextInput):
-    """
-    Receives raw text, generates a quiz, and returns it.
-    """
-    final_quiz = generate_quiz_from_text(text_input.raw_text)
-    return final_quiz
+    """Generate a quiz from raw lesson text."""
+    return generate_quiz_from_text(text_input.raw_text)
