@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.auth_route import router as auth_router
 from api.generate_route import router as generate_router
 from api.quizzes_route import router as quizzes_router
 from api.analytics_route import router as analytics_router
@@ -39,16 +40,13 @@ _DEFAULT_CORS_ORIGINS = (
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        origin.strip()
-        for origin in os.getenv("CORS_ORIGINS", _DEFAULT_CORS_ORIGINS).split(",")
-        if origin.strip()
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+app.include_router(auth_router, prefix="/api/v1", tags=["Authentication"])
 app.include_router(generate_router, prefix="/api/v1", tags=["Quiz Generation"])
 app.include_router(quizzes_router, prefix="/api/v1", tags=["Quizzes"])
 app.include_router(results_router, prefix="/api/v1", tags=["Student Results"])

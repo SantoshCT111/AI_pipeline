@@ -1,6 +1,7 @@
+import bcrypt
 from sqlalchemy.orm import Session
 
-from database.models import Announcement, Classroom, ClassroomMetric, TopicResult, Subject, Level
+from database.models import Announcement, Classroom, ClassroomMetric, TopicResult, Subject, Level, User
 
 
 def seed_database(db: Session) -> None:
@@ -180,5 +181,30 @@ def seed_database(db: Session) -> None:
                     stars=3 if (idx + 1 < s_item["level"]) else 0
                 )
                 db.add(level)
+
+    # Seed dummy users
+    if not db.query(User).first():
+        dummy_users = [
+            {
+                "email": "teacher@edugo.com",
+                "password": "teacher123",
+                "name": "Frau Schmidt",
+                "role": "teacher",
+            },
+            {
+                "email": "student@edugo.com",
+                "password": "student123",
+                "name": "Max Müller",
+                "role": "student",
+            },
+        ]
+        for u in dummy_users:
+            pw_hash = bcrypt.hashpw(u["password"].encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+            db.add(User(
+                email=u["email"],
+                password_hash=pw_hash,
+                name=u["name"],
+                role=u["role"],
+            ))
 
     db.commit()

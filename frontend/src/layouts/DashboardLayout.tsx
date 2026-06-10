@@ -1,7 +1,8 @@
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { Calendar, Menu } from 'lucide-react';
 import NavRail from '@/components/NavRail';
+import { authApi } from '@/services/api';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 
@@ -18,7 +19,14 @@ const SIDEBAR_COLLAPSED = 80;
 
 export default function DashboardLayout() {
   const location = useLocation();
+  const navigate = useNavigate();
   const pageTitle = pageTitles[location.pathname] ?? 'Lehrer Hub';
+  const user = authApi.getUser();
+
+  const handleLogout = () => {
+    authApi.logout();
+    navigate('/login', { replace: true });
+  };
 
   const [dateTime, setDateTime] = useState(() => formatDateTime());
   const [isDesktop, setIsDesktop] = useState(
@@ -118,10 +126,25 @@ export default function DashboardLayout() {
               </h1>
             </div>
 
-            {/* Date / time */}
-            <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground shrink-0">
-              <Calendar size={15} aria-hidden="true" />
-              <time>{dateTime}</time>
+            {/* Date / time + Logout */}
+            <div className="hidden sm:flex items-center gap-4 text-sm text-muted-foreground shrink-0">
+              <div className="flex items-center gap-2">
+                <Calendar size={15} aria-hidden="true" />
+                <time>{dateTime}</time>
+              </div>
+              {user && (
+                <div className="flex items-center gap-3 pl-3 border-l border-border">
+                  <span className="text-foreground font-medium text-sm">{user.name}</span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground hover:text-destructive h-8 px-2"
+                    onClick={handleLogout}
+                  >
+                    Abmelden
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </header>
