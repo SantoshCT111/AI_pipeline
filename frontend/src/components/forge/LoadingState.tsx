@@ -5,8 +5,8 @@ export default function LoadingState() {
   return (
     <div className="animate-fade-in max-w-2xl mx-auto space-y-6 py-8">
       <div className="text-center space-y-2 mb-8">
-        <h3 className="font-serif text-xl font-medium">Crafting your quiz</h3>
-        <p className="text-sm text-muted-foreground">This usually takes 15–30 seconds.</p>
+        <h3 className="font-serif text-xl font-medium">Quiz wird erstellt …</h3>
+        <p className="text-sm text-muted-foreground">Das dauert in der Regel 15–30 Sekunden.</p>
       </div>
       <Card>
         <CardContent className="pt-6 space-y-4">

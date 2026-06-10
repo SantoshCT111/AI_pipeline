@@ -45,7 +45,7 @@
   --secondary: #f3f2ef;
   --secondary-foreground: #1a1a1a;
   --muted: #f3f2ef;
-  --muted-foreground: #6b6b6b;
+  --muted-foreground: #4a4a4a;   /* was #6b6b6b — much more readable */
   --accent: #f3f2ef;
   --accent-foreground: #1a1a1a;
   --destructive: #b85c4a;
@@ -60,6 +60,12 @@
     @apply border-border;
   }
 
+  html {
+    /* 19px root — every rem utility scales automatically */
+    font-size: 19px;
+    line-height: 1.7;
+  }
+
   body {
     @apply bg-background text-foreground font-sans antialiased;
     font-feature-settings: 'rlig' 1, 'calt' 1;
@@ -67,7 +73,12 @@
 
   h1, h2, h3, h4 {
     font-family: var(--font-serif);
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+  }
+
+  p {
+    line-height: 1.75;
   }
 }
 

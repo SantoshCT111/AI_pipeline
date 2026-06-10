@@ -116,7 +116,7 @@ def seed_database(db: Session) -> None:
                 "emoji": "🔢",
                 "color": "#FF4B4B",
                 "shadow_color": "#C73A3A",
-                "level": 7,
+                "level": 1,
                 "levels": [
                     "Zahlen 1-10",
                     "Addition",
@@ -133,7 +133,7 @@ def seed_database(db: Session) -> None:
                 "emoji": "🌿",
                 "color": "#58CC02",
                 "shadow_color": "#46A302",
-                "level": 3,
+                "level": 1,
                 "levels": [
                     "Pflanzen",
                     "Tiere",
@@ -147,7 +147,7 @@ def seed_database(db: Session) -> None:
                 "emoji": "🎨",
                 "color": "#CE82FF",
                 "shadow_color": "#A366CC",
-                "level": 5,
+                "level": 1,
                 "levels": [
                     "Grundfarben",
                     "Formen zeichnen",

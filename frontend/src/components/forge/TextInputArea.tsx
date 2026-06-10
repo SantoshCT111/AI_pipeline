@@ -16,19 +16,19 @@ export default function TextInputArea({ onSubmit }: TextInputAreaProps) {
       <Textarea
         value={text}
         onChange={(e) => setText(e.target.value)}
-        placeholder="Paste your lesson, passage, or reading here…"
+        placeholder="Lektion, Abschnitt oder Text hier einfügen …"
         className="min-h-[200px] resize-y"
       />
       <div className="flex items-center justify-between">
         <span className="text-xs text-muted-foreground">
           {text.length.toLocaleString()} characters
           {!isValid && text.length > 0 && (
-            <span className="ml-2 text-destructive">· {50 - text.trim().length} more needed</span>
+            <span className="ml-2 text-destructive">· noch {50 - text.trim().length} Zeichen nötig</span>
           )}
         </span>
         <Button onClick={() => isValid && onSubmit(text.trim())} disabled={!isValid}>
           <ArrowUp size={16} />
-          Generate quiz
+          Quiz erstellen
         </Button>
       </div>
     </div>

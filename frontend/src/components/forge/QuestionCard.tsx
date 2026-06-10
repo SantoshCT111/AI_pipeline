@@ -46,7 +46,7 @@ export default function QuestionCard({ task, index, onUpdate, onDelete }: Questi
     <Card className="animate-fade-in">
       <CardHeader className="flex flex-row flex-wrap items-center gap-2 pb-3">
         <Badge variant="secondary">Q{index + 1}</Badge>
-        <Badge variant="outline">{isMultipleChoice ? 'Multiple choice' : 'True / false'}</Badge>
+        <Badge variant="outline">{isMultipleChoice ? 'Mehrfachauswahl' : 'Wahr / Falsch'}</Badge>
         <Badge>{task.xp_reward} XP</Badge>
         <Button
           variant={confirmDelete ? 'destructive' : 'ghost'}
@@ -55,12 +55,12 @@ export default function QuestionCard({ task, index, onUpdate, onDelete }: Questi
           onClick={handleDeleteClick}
         >
           <Trash2 size={14} />
-          {confirmDelete ? 'Confirm' : 'Delete'}
+          {confirmDelete ? 'Bestätigen' : 'Löschen'}
         </Button>
       </CardHeader>
       <CardContent className="space-y-5">
         <div className="space-y-2">
-          <Label>Question</Label>
+          <Label>Frage</Label>
           <Textarea
             value={task.question_text}
             onChange={(e) => onUpdate({ ...task, question_text: e.target.value })}
@@ -70,7 +70,7 @@ export default function QuestionCard({ task, index, onUpdate, onDelete }: Questi
         </div>
 
         <div className="space-y-3">
-          <Label className="text-xs uppercase tracking-wider text-muted-foreground">Answers</Label>
+          <Label className="text-xs uppercase tracking-wider text-muted-foreground">Antworten</Label>
           <div className={cn('grid gap-2', isMultipleChoice ? 'sm:grid-cols-2' : 'max-w-sm')}>
             {task.options.map((option, optIdx) => (
               <label
@@ -102,7 +102,7 @@ export default function QuestionCard({ task, index, onUpdate, onDelete }: Questi
         <div>
           <Button variant="ghost" size="sm" onClick={() => setShowExplanation(!showExplanation)}>
             {showExplanation ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            {showExplanation ? 'Hide explanation' : 'Show explanation'}
+            {showExplanation ? 'Erklärung ausblenden' : 'Erklärung anzeigen'}
           </Button>
           {showExplanation && (
             <Textarea
@@ -110,7 +110,7 @@ export default function QuestionCard({ task, index, onUpdate, onDelete }: Questi
               value={task.explanation}
               onChange={(e) => onUpdate({ ...task, explanation: e.target.value })}
               rows={3}
-              placeholder="Explanation for students…"
+              placeholder="Erklärung für Schüler …"
             />
           )}
         </div>

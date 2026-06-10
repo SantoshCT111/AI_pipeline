@@ -21,7 +21,7 @@ export default function ClassroomSelects({ values, onChange, subjectsList }: Cla
   return (
     <div className="grid gap-4 sm:grid-cols-3">
       <div className="space-y-2">
-        <Label>Subject</Label>
+        <Label>Fach</Label>
         <Select
           value={values.subject}
           onValueChange={(subject) => onChange({ ...values, subject })}
@@ -40,7 +40,7 @@ export default function ClassroomSelects({ values, onChange, subjectsList }: Cla
       </div>
 
       <div className="space-y-2">
-        <Label>Class</Label>
+        <Label>Klasse</Label>
         <Select value={values.grade} onValueChange={(grade) => onChange({ ...values, grade })}>
           <SelectTrigger>
             <SelectValue />
@@ -56,7 +56,7 @@ export default function ClassroomSelects({ values, onChange, subjectsList }: Cla
       </div>
 
       <div className="space-y-2">
-        <Label>Section</Label>
+        <Label>Gruppe</Label>
         <Select
           value={values.section}
           onValueChange={(section) => onChange({ ...values, section })}

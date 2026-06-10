@@ -4,112 +4,136 @@ import { Calendar, Menu } from 'lucide-react';
 import NavRail from '@/components/NavRail';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
+
 const pageTitles: Record<string, string> = {
-  '/forge': 'AI Forge',
-  '/analytics': 'Analytics',
-  '/subjects': 'Curriculum Builder',
-  '/comms': 'Messages',
+  '/':          'Startseite',
+  '/forge':     'KI-Werkzeug',
+  '/analytics': 'Auswertung',
+  '/subjects':  'Lehrplan',
+  '/comms':     'Nachrichten',
 };
+
+const SIDEBAR_EXPANDED = 288;
+const SIDEBAR_COLLAPSED = 80;
 
 export default function DashboardLayout() {
   const location = useLocation();
-  const pageTitle = pageTitles[location.pathname] ?? 'Teacher Hub';
+  const pageTitle = pageTitles[location.pathname] ?? 'Lehrer Hub';
 
   const [dateTime, setDateTime] = useState(() => formatDateTime());
-  const [isDesktop, setIsDesktop] = useState(() =>
-    typeof window === 'undefined' ? true : window.innerWidth >= 1024,
+  const [isDesktop, setIsDesktop] = useState(
+    () => (typeof window === 'undefined' ? true : window.innerWidth >= 1024),
   );
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
     if (typeof window === 'undefined') return false;
-    const stored = window.localStorage.getItem('teacherHub.sidebarCollapsed');
-    return stored === 'true';
+    return window.localStorage.getItem('teacherHub.sidebarCollapsed') === 'true';
   });
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
+  // Clock tick
   useEffect(() => {
-    const interval = setInterval(() => setDateTime(formatDateTime()), 60_000);
-    return () => clearInterval(interval);
+    const id = setInterval(() => setDateTime(formatDateTime()), 60_000);
+    return () => clearInterval(id);
   }, []);
 
+  // Responsive
   useEffect(() => {
     const onResize = () => {
-      const nextIsDesktop = window.innerWidth >= 1024;
-      setIsDesktop(nextIsDesktop);
-      if (nextIsDesktop) setMobileSidebarOpen(false);
+      const next = window.innerWidth >= 1024;
+      setIsDesktop(next);
+      if (next) setMobileSidebarOpen(false);
     };
     onResize();
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  const handleMenuToggle = () => {
-    if (isDesktop) {
-      setSidebarCollapsed((prev) => {
-        const next = !prev;
-        window.localStorage.setItem('teacherHub.sidebarCollapsed', String(next));
-        return next;
-      });
-      return;
-    }
-    setMobileSidebarOpen((prev) => !prev);
+  // Desktop: toggle collapsed state (persisted)
+  const toggleDesktopSidebar = () => {
+    setSidebarCollapsed((prev) => {
+      const next = !prev;
+      window.localStorage.setItem('teacherHub.sidebarCollapsed', String(next));
+      return next;
+    });
   };
 
-  const sidebarWidth = isDesktop ? (sidebarCollapsed ? 72 : 256) : 0;
+  const sidebarWidth = isDesktop
+    ? sidebarCollapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED
+    : 0;
 
   return (
     <div className="min-h-screen bg-background">
-      {isDesktop ? (
+
+      {/* ── Desktop sidebar (fixed) ─────────────────────── */}
+      {isDesktop && (
         <NavRail
-          isDesktop={isDesktop}
           isCollapsed={sidebarCollapsed}
-          isMobileOpen={false}
+          onToggle={toggleDesktopSidebar}
           onNavigate={() => undefined}
         />
-      ) : (
+      )}
+
+      {/* ── Mobile sidebar (Sheet drawer) ──────────────── */}
+      {!isDesktop && (
         <Sheet open={mobileSidebarOpen} onOpenChange={setMobileSidebarOpen}>
           <SheetContent side="left" className="w-64 p-0 border-r">
             <SheetTitle className="sr-only">Navigation</SheetTitle>
             <NavRail
-              isDesktop={false}
               isCollapsed={false}
-              isMobileOpen
-              embedded
+              onToggle={() => setMobileSidebarOpen(false)}
               onNavigate={() => setMobileSidebarOpen(false)}
+              embedded
             />
           </SheetContent>
         </Sheet>
       )}
 
+      {/* ── Main content ────────────────────────────────── */}
       <div
-        className="min-h-screen transition-[padding] duration-300"
+        className="flex min-h-screen flex-col transition-[padding-left] duration-300 ease-in-out"
         style={{ paddingLeft: isDesktop ? sidebarWidth : 0 }}
       >
+        {/* ── Top Header ──────────────────────────────── */}
         <header className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-md">
-          <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-            <div className="flex items-center gap-3 min-w-0">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                aria-label={isDesktop ? 'Toggle sidebar' : 'Open menu'}
-                onClick={handleMenuToggle}
-              >
-                <Menu size={18} />
-              </Button>
-              <div className="min-w-0">
-                <p className="text-[10px] uppercase tracking-[0.2em] text-muted-foreground font-medium">Teacher Hub</p>
-                <h1 className="truncate font-serif text-lg font-medium text-foreground">{pageTitle}</h1>
-              </div>
+          <div className="flex h-20 items-center justify-between gap-6 px-8">
+
+            <div className="flex items-center gap-4 min-w-0">
+              {/* Mobile-only hamburger */}
+              {!isDesktop && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="shrink-0 text-muted-foreground hover:text-foreground h-11 w-11"
+                  aria-label="Menü öffnen"
+                  onClick={() => setMobileSidebarOpen(true)}
+                >
+                  <Menu size={22} />
+                </Button>
+              )}
+
+              {/* Page title */}
+              <h1 className="truncate font-serif text-2xl font-medium text-foreground leading-tight">
+                {pageTitle}
+              </h1>
             </div>
-            <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground">
-              <Calendar size={14} />
-              <span>{dateTime}</span>
+
+            {/* Date / time */}
+            <div className="hidden sm:flex items-center gap-2 text-sm text-muted-foreground shrink-0">
+              <Calendar size={15} aria-hidden="true" />
+              <time>{dateTime}</time>
             </div>
           </div>
         </header>
 
-        <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
-          <Outlet />
+        {/* ── Page content ──────────────────────────────── */}
+        <main
+          id="hauptinhalt"
+          className="flex-1 w-full"
+        >
+          <div className="mx-auto max-w-7xl px-10 py-12 animate-fade-in">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>
@@ -117,7 +141,7 @@ export default function DashboardLayout() {
 }
 
 function formatDateTime(): string {
-  return new Intl.DateTimeFormat('en-US', {
+  return new Intl.DateTimeFormat('de-DE', {
     weekday: 'short',
     month: 'short',
     day: 'numeric',

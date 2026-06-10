@@ -42,7 +42,7 @@ export default function FileDropZone({ onFileAccepted }: FileDropZoneProps) {
             <X size={18} />
           </Button>
         </div>
-        <Button onClick={() => onFileAccepted(selectedFile)}>Generate quiz</Button>
+        <Button onClick={() => onFileAccepted(selectedFile)}>Quiz erstellen</Button>
       </div>
     );
   }
@@ -61,9 +61,9 @@ export default function FileDropZone({ onFileAccepted }: FileDropZoneProps) {
         <Upload size={22} className="text-muted-foreground" />
       </div>
       <p className="font-medium text-foreground">
-        {isDragActive ? 'Drop your PDF here' : 'Drag and drop a PDF'}
+        {isDragActive ? 'PDF hier ablegen' : 'PDF hierher ziehen'}
       </p>
-      <p className="mt-1 text-sm text-muted-foreground">or click to browse · max 10MB</p>
+      <p className="mt-1 text-sm text-muted-foreground">oder klicken zum Suchen · max. 10 MB</p>
     </div>
   );
 }

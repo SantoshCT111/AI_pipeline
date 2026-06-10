@@ -24,7 +24,7 @@ export default function AIForgePage() {
       setTasks(result.tasks);
       setPhase('editor');
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to generate quiz.';
+      const message = err instanceof Error ? err.message : 'Quiz konnte nicht erstellt werden.';
       setError(message);
       toast.error(message);
       setPhase('input');
@@ -39,7 +39,7 @@ export default function AIForgePage() {
       setTasks(result.tasks);
       setPhase('editor');
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to generate quiz.';
+      const message = err instanceof Error ? err.message : 'Quiz konnte nicht erstellt werden.';
       setError(message);
       toast.error(message);
       setPhase('input');
@@ -76,14 +76,14 @@ export default function AIForgePage() {
   }
 
   return (
-    <div className="animate-fade-in space-y-8">
-      <div className="max-w-2xl">
-        <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground font-medium mb-3">AI Forge</p>
-        <h2 className="font-serif text-3xl sm:text-4xl font-medium tracking-tight text-foreground leading-tight">
-          Turn a lesson into a quiz.
+    <div className="animate-fade-in space-y-10">
+      <div className="max-w-3xl">
+        <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground font-semibold mb-4">KI-Werkzeug</p>
+        <h2 className="font-serif text-5xl font-medium tracking-tight text-foreground leading-tight">
+          Aus einer Lektion ein Quiz machen.
         </h2>
-        <p className="mt-4 text-muted-foreground leading-relaxed max-w-lg">
-          Upload a PDF or paste text. Review and refine each question before sending it to your class.
+        <p className="mt-5 text-lg text-muted-foreground leading-relaxed max-w-2xl">
+          PDF hochladen oder Text einfügen. Jede Frage prüfen und verfeinern, bevor sie an die Klasse gesendet wird.
         </p>
       </div>
 
@@ -94,18 +94,18 @@ export default function AIForgePage() {
       )}
 
       <Card>
-        <CardHeader className="pb-4">
+        <CardHeader className="pb-4 pt-7 px-7">
           <div className="flex items-center gap-2 text-primary">
-            <Sparkles size={16} />
-            <CardDescription className="text-primary font-medium m-0">New quiz</CardDescription>
+            <Sparkles size={18} />
+            <CardDescription className="text-primary font-semibold text-sm m-0">Neues Quiz</CardDescription>
           </div>
-          <CardTitle className="text-xl">Add your lesson content</CardTitle>
+          <CardTitle className="text-2xl mt-1">Lerninhalt hinzufügen</CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-7 pb-7">
           <Tabs value={inputMode} onValueChange={(v) => setInputMode(v as 'file' | 'text')}>
             <TabsList className="mb-6">
-              <TabsTrigger value="file">Upload PDF</TabsTrigger>
-              <TabsTrigger value="text">Paste text</TabsTrigger>
+              <TabsTrigger value="file">PDF hochladen</TabsTrigger>
+              <TabsTrigger value="text">Text einfügen</TabsTrigger>
             </TabsList>
             <TabsContent value="file" className="mt-0">
               <FileDropZone onFileAccepted={handleGenerateFromFile} />

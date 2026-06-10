@@ -16,17 +16,15 @@ export default function SubjectsPage() {
   const [isEditLevelsOpen, setIsEditLevelsOpen] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
 
-  // Add Subject Form State
   const [newName, setNewName] = useState('');
   const [newEmoji, setNewEmoji] = useState('📝');
   const [newColor, setNewColor] = useState('#1CB0F6');
   const [newShadowColor, setNewShadowColor] = useState('#1480B3');
   const [newLevelProgress, setNewLevelProgress] = useState(1);
   const [newLevels, setNewLevels] = useState<{ title: string }[]>([
-    { title: 'Level 1 Intro' }
+    { title: 'Stufe 1 Einführung' }
   ]);
 
-  // Edit Levels State
   const [editLevelsList, setEditLevelsList] = useState<{ title: string }[]>([]);
 
   useEffect(() => {
@@ -39,14 +37,14 @@ export default function SubjectsPage() {
       const data = await subjectApi.list();
       setSubjects(data);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to load subjects.');
+      toast.error(err instanceof Error ? err.message : 'Fächer konnten nicht geladen werden.');
     } finally {
       setLoading(false);
     }
   };
 
   const handleAddLevelInput = () => {
-    setNewLevels([...newLevels, { title: `Level ${newLevels.length + 1}` }]);
+    setNewLevels([...newLevels, { title: `Stufe ${newLevels.length + 1}` }]);
   };
 
   const handleRemoveLevelInput = (idx: number) => {
@@ -61,11 +59,11 @@ export default function SubjectsPage() {
 
   const handleCreateSubject = async () => {
     if (!newName.trim()) {
-      toast.error('Please enter a subject name.');
+      toast.error('Bitte einen Fachnamen eingeben.');
       return;
     }
     if (newLevels.some(l => !l.title.trim())) {
-      toast.error('All levels must have a title.');
+      toast.error('Alle Stufen müssen einen Titel haben.');
       return;
     }
 
@@ -86,12 +84,12 @@ export default function SubjectsPage() {
         levels: formattedLevels,
       });
 
-      toast.success(`Subject '${newName}' created successfully!`);
+      toast.success(`Fach „${newName}" erfolgreich erstellt!`);
       setIsAddOpen(false);
       resetAddForm();
       fetchSubjects();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to create subject.');
+      toast.error(err instanceof Error ? err.message : 'Fach konnte nicht erstellt werden.');
     }
   };
 
@@ -101,19 +99,19 @@ export default function SubjectsPage() {
     setNewColor('#1CB0F6');
     setNewShadowColor('#1480B3');
     setNewLevelProgress(1);
-    setNewLevels([{ title: 'Level 1 Intro' }]);
+    setNewLevels([{ title: 'Stufe 1 Einführung' }]);
   };
 
   const handleDeleteSubject = async (id: number, name: string) => {
-    if (!window.confirm(`Are you sure you want to delete '${name}'? This will remove all associated quizzes and level progress.`)) {
+    if (!window.confirm(`Sicher, dass du „${name}" löschen möchtest? Alle zugehörigen Quizze und der Lernfortschritt werden entfernt.`)) {
       return;
     }
     try {
       await subjectApi.delete(id);
-      toast.success(`Deleted '${name}' subject.`);
+      toast.success(`Fach „${name}" gelöscht.`);
       fetchSubjects();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to delete subject.');
+      toast.error(err instanceof Error ? err.message : 'Fach konnte nicht gelöscht werden.');
     }
   };
 
@@ -124,7 +122,7 @@ export default function SubjectsPage() {
   };
 
   const handleAddEditLevelInput = () => {
-    setEditLevelsList([...editLevelsList, { title: `New Level ${editLevelsList.length + 1}` }]);
+    setEditLevelsList([...editLevelsList, { title: `Neue Stufe ${editLevelsList.length + 1}` }]);
   };
 
   const handleRemoveEditLevelInput = (idx: number) => {
@@ -140,7 +138,7 @@ export default function SubjectsPage() {
   const handleSaveLevels = async () => {
     if (!selectedSubject) return;
     if (editLevelsList.some(l => !l.title.trim())) {
-      toast.error('All levels must have a title.');
+      toast.error('Alle Stufen müssen einen Titel haben.');
       return;
     }
 
@@ -153,41 +151,41 @@ export default function SubjectsPage() {
       }));
 
       await subjectApi.updateLevels(selectedSubject.id, formattedLevels);
-      toast.success('Subject levels updated successfully!');
+      toast.success('Stufen erfolgreich aktualisiert!');
       setIsEditLevelsOpen(false);
       fetchSubjects();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to update levels.');
+      toast.error(err instanceof Error ? err.message : 'Stufen konnten nicht aktualisiert werden.');
     }
   };
 
   return (
-    <div className="space-y-8 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="space-y-10 animate-fade-in">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
         <div>
-          <p className="text-[10px] uppercase tracking-[0.24em] text-muted-foreground font-medium mb-3">Curriculum</p>
-          <h2 className="font-serif text-3xl sm:text-4xl font-medium tracking-tight text-foreground leading-tight">
-            Subjects & Levels
+          <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground font-semibold mb-4">Lehrplan</p>
+          <h2 className="font-serif text-5xl font-medium tracking-tight text-foreground leading-tight">
+            Fächer &amp; Stufen
           </h2>
-          <p className="mt-2 text-muted-foreground max-w-lg">
-            Manage the subjects and learning level paths displayed inside the mobile application.
+          <p className="mt-4 text-lg text-muted-foreground max-w-xl">
+            Fächer und Lernpfade verwalten, die in der mobilen App angezeigt werden.
           </p>
         </div>
 
         <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
           <DialogTrigger asChild>
             <Button className="shrink-0 flex items-center gap-2">
-              <Plus size={16} /> Add Subject
+              <Plus size={16} /> Fach hinzufügen
             </Button>
           </DialogTrigger>
           <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
                 <Sparkles size={16} className="text-primary animate-pulse" />
-                Add New Subject
+                Neues Fach hinzufügen
               </DialogTitle>
               <DialogDescription>
-                Create a new subject curriculum. Set colors and build a custom level tree path.
+                Neuen Lehrplan erstellen. Farben festlegen und einen eigenen Stufenpfad aufbauen.
               </DialogDescription>
             </DialogHeader>
 
@@ -195,24 +193,24 @@ export default function SubjectsPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="name">Name</Label>
-                  <Input id="name" placeholder="e.g. Musik" value={newName} onChange={e => setNewName(e.target.value)} />
+                  <Input id="name" placeholder="z. B. Musik" value={newName} onChange={e => setNewName(e.target.value)} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="emoji">Emoji Icon</Label>
-                  <Input id="emoji" placeholder="e.g. 🎵" value={newEmoji} onChange={e => setNewEmoji(e.target.value)} />
+                  <Label htmlFor="emoji">Emoji-Symbol</Label>
+                  <Input id="emoji" placeholder="z. B. 🎵" value={newEmoji} onChange={e => setNewEmoji(e.target.value)} />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="color">Primary Color (Hex)</Label>
+                  <Label htmlFor="color">Hauptfarbe (Hex)</Label>
                   <div className="flex gap-2">
                     <Input id="color" type="color" className="w-12 h-9 p-1 shrink-0" value={newColor} onChange={e => setNewColor(e.target.value)} />
                     <Input placeholder="#1CB0F6" value={newColor} onChange={e => setNewColor(e.target.value)} />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="shadow-color">Shadow Color (Hex)</Label>
+                  <Label htmlFor="shadow-color">Schattenfarbe (Hex)</Label>
                   <div className="flex gap-2">
                     <Input id="shadow-color" type="color" className="w-12 h-9 p-1 shrink-0" value={newShadowColor} onChange={e => setNewShadowColor(e.target.value)} />
                     <Input placeholder="#1480B3" value={newShadowColor} onChange={e => setNewShadowColor(e.target.value)} />
@@ -221,18 +219,18 @@ export default function SubjectsPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="active-level">Student Level Progression Target</Label>
+                <Label htmlFor="active-level">Lernziel-Stufe für Schüler</Label>
                 <Input id="active-level" type="number" min="1" max={newLevels.length} value={newLevelProgress} onChange={e => setNewLevelProgress(Math.max(1, Math.min(newLevels.length, parseInt(e.target.value) || 1)))} />
                 <span className="text-[11px] text-muted-foreground block">
-                  Students will be unlocked up to this level.
+                  Schüler werden bis zu dieser Stufe freigeschaltet.
                 </span>
               </div>
 
               <div className="space-y-3 pt-2">
                 <div className="flex items-center justify-between">
-                  <Label className="flex items-center gap-1"><Layers size={14} /> Level Tree Nodes</Label>
+                  <Label className="flex items-center gap-1"><Layers size={14} /> Stufenbaum-Knoten</Label>
                   <Button variant="outline" size="sm" onClick={handleAddLevelInput}>
-                    + Add Node
+                    + Knoten hinzufügen
                   </Button>
                 </div>
 
@@ -241,7 +239,7 @@ export default function SubjectsPage() {
                     <div key={index} className="flex gap-2 items-center">
                       <span className="text-xs font-mono font-medium text-muted-foreground w-6">#{index + 1}</span>
                       <Input
-                        placeholder={`e.g. Level ${index + 1} Topic`}
+                        placeholder={`z. B. Stufe ${index + 1} Thema`}
                         value={lvl.title}
                         onChange={e => handleLevelTitleChange(index, e.target.value)}
                       />
@@ -257,8 +255,8 @@ export default function SubjectsPage() {
             </div>
 
             <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddOpen(false)}>Cancel</Button>
-              <Button onClick={handleCreateSubject}>Create Subject</Button>
+              <Button variant="outline" onClick={() => setIsAddOpen(false)}>Abbrechen</Button>
+              <Button onClick={handleCreateSubject}>Fach erstellen</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -285,7 +283,7 @@ export default function SubjectsPage() {
                     <div>
                       <CardTitle className="text-xl">{subject.name}</CardTitle>
                       <CardDescription>
-                        {subject.levels.length} Levels Defined
+                        {subject.levels.length} Stufen festgelegt
                       </CardDescription>
                     </div>
                   </div>
@@ -297,8 +295,8 @@ export default function SubjectsPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-1">
                   <div className="flex justify-between text-xs text-muted-foreground font-medium">
-                    <span>Student Level Target</span>
-                    <span className="font-semibold" style={{ color: subject.color }}>Level {subject.level}</span>
+                    <span>Lernziel-Stufe</span>
+                    <span className="font-semibold" style={{ color: subject.color }}>Stufe {subject.level}</span>
                   </div>
                   <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
                     <div className="h-full rounded-full transition-all" style={{ width: `${(subject.level / subject.levels.length) * 100}%`, backgroundColor: subject.color }} />
@@ -307,7 +305,7 @@ export default function SubjectsPage() {
 
                 <div className="flex gap-2">
                   <Button variant="outline" size="sm" className="w-full flex items-center justify-center gap-1.5" onClick={() => handleOpenEditLevels(subject)}>
-                    <Edit size={14} /> Edit Level Tree
+                    <Edit size={14} /> Stufenbaum bearbeiten
                   </Button>
                 </div>
               </CardContent>
@@ -316,24 +314,24 @@ export default function SubjectsPage() {
         </div>
       )}
 
-      {/* Edit Levels Modal */}
+      {/* Stufen bearbeiten Modal */}
       <Dialog open={isEditLevelsOpen} onOpenChange={setIsEditLevelsOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-[480px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Layers size={18} style={{ color: selectedSubject?.color }} />
-              Edit Levels: {selectedSubject?.name}
+              Stufen bearbeiten: {selectedSubject?.name}
             </DialogTitle>
             <DialogDescription>
-              Configure the learning path and node titles for this subject tree.
+              Lernpfad und Stufentitel für diesen Fachbaum anpassen.
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3 py-2">
             <div className="flex items-center justify-between">
-              <Label>Path Node Sequence</Label>
+              <Label>Stufenreihenfolge</Label>
               <Button variant="outline" size="sm" onClick={handleAddEditLevelInput}>
-                + Add Level
+                + Stufe hinzufügen
               </Button>
             </div>
 
@@ -342,7 +340,7 @@ export default function SubjectsPage() {
                 <div key={index} className="flex gap-2 items-center">
                   <span className="text-xs font-mono font-medium text-muted-foreground w-6">#{index + 1}</span>
                   <Input
-                    placeholder={`e.g. Level ${index + 1}`}
+                    placeholder={`z. B. Stufe ${index + 1}`}
                     value={lvl.title}
                     onChange={e => handleEditLevelTitleChange(index, e.target.value)}
                   />
@@ -357,9 +355,9 @@ export default function SubjectsPage() {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditLevelsOpen(false)}>Cancel</Button>
+            <Button variant="outline" onClick={() => setIsEditLevelsOpen(false)}>Abbrechen</Button>
             <Button onClick={handleSaveLevels} className="flex items-center gap-1">
-              <Save size={14} /> Save Changes
+              <Save size={14} /> Änderungen speichern
             </Button>
           </DialogFooter>
         </DialogContent>

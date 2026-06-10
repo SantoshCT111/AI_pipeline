@@ -1,87 +1,163 @@
 import { NavLink } from 'react-router-dom';
-import { BarChart3, BookOpen, MessageSquare, Wand2 } from 'lucide-react';
+import {
+  BarChart3,
+  BookOpen,
+  ChevronLeft,
+  Home,
+  MessageSquare,
+  Wand2,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
-  { to: '/forge', label: 'Forge', icon: Wand2 },
-  { to: '/analytics', label: 'Analytics', icon: BarChart3 },
-  { to: '/subjects', label: 'Subjects', icon: BookOpen },
-  { to: '/comms', label: 'Messages', icon: MessageSquare },
+  { to: '/',          label: 'Startseite',  icon: Home,          end: true  },
+  { to: '/forge',     label: 'KI-Werkzeug', icon: Wand2,         end: false },
+  { to: '/analytics', label: 'Auswertung',  icon: BarChart3,     end: false },
+  { to: '/subjects',  label: 'Fächer',      icon: BookOpen,      end: false },
+  { to: '/comms',     label: 'Nachrichten', icon: MessageSquare, end: false },
 ];
 
 interface NavRailProps {
-  isDesktop: boolean;
   isCollapsed: boolean;
-  isMobileOpen: boolean;
+  onToggle: () => void;
   onNavigate: () => void;
   embedded?: boolean;
 }
 
+const EXPANDED_W  = 'w-72';   // 288px expanded
+const COLLAPSED_W = 'w-20';   // 80px collapsed
+
 export default function NavRail({
-  isDesktop,
   isCollapsed,
-  isMobileOpen,
+  onToggle,
   onNavigate,
   embedded = false,
 }: NavRailProps) {
-  const compact = isDesktop && isCollapsed;
-
   return (
     <nav
+      aria-label="Hauptnavigation"
       className={cn(
-        'flex h-full min-h-screen flex-col border-r border-border bg-card transition-[transform,width] duration-300',
-        embedded ? 'relative w-full' : 'fixed left-0 top-0 z-40 h-screen',
-        !embedded && (isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'),
-        !embedded && (compact ? 'w-[72px]' : 'w-64'),
-        embedded && 'w-full',
+        'flex h-full min-h-screen flex-col border-r border-border bg-card',
+        'transition-[transform,width] duration-300 ease-in-out',
+        embedded
+          ? 'relative w-full'
+          : cn(
+              'fixed left-0 top-0 z-40 h-screen',
+              isCollapsed ? COLLAPSED_W : EXPANDED_W,
+            ),
       )}
     >
-      <div className={cn('flex items-center border-b border-border px-4 py-5', compact && 'justify-center px-2')}>
-        <NavLink to="/forge" onClick={onNavigate} className="flex items-center gap-3 min-w-0">
-          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-            <BookOpen size={16} />
-          </div>
-          {!compact && (
-            <div className="min-w-0">
-              <p className="font-serif text-sm font-medium leading-tight text-foreground">Teacher Hub</p>
-              <p className="text-[11px] text-muted-foreground tracking-wide">間 · ma</p>
+      {/* ── Brand / Toggle button ─────────────────────── */}
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-label={isCollapsed ? 'Seitenleiste öffnen' : 'Seitenleiste schließen'}
+        className={cn(
+          'group flex w-full items-center border-b border-border',
+          'transition-colors hover:bg-muted/60',
+          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          isCollapsed ? 'justify-center px-0 py-6' : 'gap-4 px-5 py-6',
+        )}
+      >
+        {/* Logo square */}
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground transition-transform group-hover:scale-95">
+          <BookOpen size={20} aria-hidden="true" />
+        </div>
+
+        {/* Label + chevron (expanded only) */}
+        {!isCollapsed && (
+          <>
+            <div className="min-w-0 flex-1 text-left">
+              <p className="font-serif text-base font-semibold leading-tight text-foreground">
+                Lehrer Hub
+              </p>
+              <p className="text-xs text-muted-foreground tracking-wide mt-0.5">間 · ma</p>
             </div>
-          )}
-        </NavLink>
-      </div>
+            <ChevronLeft
+              size={18}
+              aria-hidden="true"
+              className="shrink-0 text-muted-foreground/50 group-hover:text-muted-foreground transition-colors"
+            />
+          </>
+        )}
+      </button>
 
-      <div className={cn('flex flex-1 flex-col gap-1 p-3', compact && 'items-center')}>
-        {navItems.map(({ to, label, icon: Icon }) => (
-          <NavLink
-            key={to}
-            to={to}
-            onClick={onNavigate}
-            title={compact ? label : undefined}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center rounded-lg py-2.5 text-sm transition-colors',
-                compact ? 'justify-center px-2 w-10' : 'gap-3 px-3',
-                isActive
-                  ? 'bg-primary text-primary-foreground font-medium'
-                  : 'text-muted-foreground hover:bg-muted hover:text-foreground',
-              )
-            }
-          >
-            <Icon size={18} />
-            {!compact && <span>{label}</span>}
-          </NavLink>
+      {/* ── Nav items ─────────────────────────────────── */}
+      <ul
+        role="list"
+        className={cn(
+          'flex flex-1 flex-col gap-1 p-4',
+          isCollapsed && 'items-center',
+        )}
+      >
+        {navItems.map(({ to, label, icon: Icon, end }) => (
+          <li key={to}>
+            <NavLink
+              to={to}
+              end={end}
+              onClick={onNavigate}
+              title={isCollapsed ? label : undefined}
+              aria-label={label}
+              className={({ isActive }) =>
+                cn(
+                  'group relative flex items-center rounded-xl text-[15px] font-medium',
+                  'transition-colors duration-150',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  isCollapsed
+                    ? 'justify-center w-12 h-12'
+                    : 'gap-3.5 px-4 py-3.5',
+                  isActive
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                )
+              }
+            >
+              {({ isActive }) => (
+                <>
+                  {/* Active left border */}
+                  {isActive && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-primary"
+                    />
+                  )}
+                  <Icon
+                    size={22}
+                    aria-hidden="true"
+                    className={cn(
+                      'shrink-0 transition-colors',
+                      isActive
+                        ? 'text-primary'
+                        : 'text-muted-foreground group-hover:text-foreground',
+                    )}
+                  />
+                  {!isCollapsed && (
+                    <span className={cn('truncate', isActive ? 'text-primary' : '')}>
+                      {label}
+                    </span>
+                  )}
+                </>
+              )}
+            </NavLink>
+          </li>
         ))}
-      </div>
+      </ul>
 
-      <div className={cn('border-t border-border p-3', compact && 'flex justify-center')}>
-        <div className={cn('flex items-center gap-3 rounded-lg bg-muted/60 px-3 py-2.5', compact && 'px-2')}>
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
-            T
+      {/* ── User footer ───────────────────────────────── */}
+      <div className={cn('border-t border-border p-4', isCollapsed && 'flex justify-center')}>
+        <div
+          className={cn(
+            'flex items-center gap-3 rounded-xl bg-muted/60 py-3',
+            isCollapsed ? 'justify-center px-2 w-12' : 'px-4',
+          )}
+        >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+            L
           </div>
-          {!compact && (
+          {!isCollapsed && (
             <div className="min-w-0">
-              <p className="truncate text-sm font-medium">Teacher</p>
-              <p className="text-xs text-muted-foreground">Workspace</p>
+              <p className="truncate text-[15px] font-semibold text-foreground">Lehrkraft</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Arbeitsbereich</p>
             </div>
           )}
         </div>
