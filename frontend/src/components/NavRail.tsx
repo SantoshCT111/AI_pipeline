@@ -24,8 +24,8 @@ interface NavRailProps {
   embedded?: boolean;
 }
 
-const EXPANDED_W  = 'w-72';   // 288px expanded
-const COLLAPSED_W = 'w-20';   // 80px collapsed
+const EXPANDED_W  = 'w-60';   // 240px expanded
+const COLLAPSED_W = 'w-[72px]';   // 72px collapsed
 
 export default function NavRail({
   isCollapsed,
@@ -104,7 +104,7 @@ export default function NavRail({
                   'transition-colors duration-150',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   isCollapsed
-                    ? 'justify-center w-12 h-12'
+                    ? 'justify-center w-11 h-11'
                     : 'gap-3.5 px-4 py-3.5',
                   isActive
                     ? 'bg-primary/10 text-primary'

@@ -14,8 +14,8 @@ const pageTitles: Record<string, string> = {
   '/comms':     'Nachrichten',
 };
 
-const SIDEBAR_EXPANDED = 288;
-const SIDEBAR_COLLAPSED = 80;
+const SIDEBAR_EXPANDED = 240;
+const SIDEBAR_COLLAPSED = 72;
 
 export default function DashboardLayout() {
   const location = useLocation();
@@ -33,8 +33,9 @@ export default function DashboardLayout() {
     () => (typeof window === 'undefined' ? true : window.innerWidth >= 1024),
   );
   const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return window.localStorage.getItem('teacherHub.sidebarCollapsed') === 'true';
+    if (typeof window === 'undefined') return true;
+    const saved = window.localStorage.getItem('teacherHub.sidebarCollapsed');
+    return saved === null ? true : saved === 'true';
   });
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
