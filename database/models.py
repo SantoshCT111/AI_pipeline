@@ -84,6 +84,8 @@ class Announcement(Base):
     title: Mapped[str] = mapped_column(String(256), nullable=False)
     body: Mapped[str] = mapped_column(Text, nullable=False)
     priority: Mapped[str] = mapped_column(String(16), nullable=False, default="Normal")
+    grade: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    section: Mapped[str | None] = mapped_column(String(32), nullable=True)
     read_count: Mapped[int] = mapped_column(Integer, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
@@ -123,5 +125,7 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(256), nullable=False)
     name: Mapped[str] = mapped_column(String(128), nullable=False)
     role: Mapped[str] = mapped_column(String(32), nullable=False, default="student")  # "teacher" or "student"
+    grade: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    section: Mapped[str | None] = mapped_column(String(32), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 

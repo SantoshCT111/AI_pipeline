@@ -199,3 +199,66 @@ export const subjectApi = {
     }).then((response) => parseResponse<Subject>(response));
   },
 };
+
+// ─── AI Chat API ─────────────────────────────────────────────────────────────
+
+export interface AIChatMessage {
+  role: 'user' | 'ai';
+  content: string;
+}
+
+export interface AnalyticsContext {
+  subject: string;
+  grade: string;
+  section: string;
+  avg_score: number;
+  completion_rate: number;
+  students_count: number;
+  topics: { topic: string; accuracy: number; status: string }[];
+  recent_quizzes: { title: string; level_number: number | null; created_at: string }[];
+}
+
+export interface CommsContext {
+  announcements: {
+    title: string;
+    body: string;
+    priority: string;
+    grade: string | null;
+    section: string | null;
+    created_at: string;
+  }[];
+}
+
+export interface DraftAction {
+  type: 'draft';
+  title: string;
+  body: string;
+  priority: string;
+}
+
+export interface AIChatResponse {
+  reply: string;
+  action: DraftAction | null;
+}
+
+export const aiChatApi = {
+  send(
+    message: string,
+    contextType: 'analytics' | 'comms',
+    history: AIChatMessage[],
+    analyticsContext?: AnalyticsContext,
+    commsContext?: CommsContext,
+  ): Promise<AIChatResponse> {
+    return fetch(`${API_BASE}/api/v1/ai/chat`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify({
+        message,
+        context_type: contextType,
+        history,
+        analytics_context: analyticsContext ?? null,
+        comms_context: commsContext ?? null,
+      }),
+    }).then((response) => parseResponse<AIChatResponse>(response));
+  },
+};

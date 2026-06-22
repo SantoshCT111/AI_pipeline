@@ -13,6 +13,8 @@ class RegisterRequest(BaseModel):
     password: str
     name: str
     role: str = "student"
+    grade: Optional[str] = None
+    section: Optional[str] = None
 
 
 class UserResponse(BaseModel):
@@ -20,6 +22,8 @@ class UserResponse(BaseModel):
     email: str
     name: str
     role: str
+    grade: Optional[str] = None
+    section: Optional[str] = None
     created_at: datetime
 
 

@@ -1,5 +1,6 @@
 import os
 from datetime import datetime, timedelta, timezone
+from typing import Optional
 
 import bcrypt
 import jwt
@@ -49,6 +50,21 @@ def get_current_user(authorization: str = Header(...), db: Session = Depends(get
         raise HTTPException(status_code=401, detail="Invalid token")
 
 
+def get_current_user_optional(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)) -> Optional[User]:
+    """Optionally extract and validate JWT token from Authorization header."""
+    if not authorization:
+        return None
+    try:
+        token = authorization.replace("Bearer ", "")
+        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        user_id = payload.get("sub")
+        if user_id is None:
+            return None
+        return db.query(User).filter(User.id == user_id).first()
+    except Exception:
+        return None
+
+
 @router.post("/auth/login", response_model=AuthResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == payload.email).first()
@@ -63,6 +79,8 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)):
             email=user.email,
             name=user.name,
             role=user.role,
+            grade=user.grade,
+            section=user.section,
             created_at=user.created_at,
         ),
     )
@@ -80,6 +98,8 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         password_hash=pw_hash,
         name=payload.name,
         role=payload.role,
+        grade=payload.grade,
+        section=payload.section,
     )
     db.add(user)
     db.commit()
@@ -93,6 +113,8 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
             email=user.email,
             name=user.name,
             role=user.role,
+            grade=user.grade,
+            section=user.section,
             created_at=user.created_at,
         ),
     )
@@ -105,5 +127,7 @@ def get_me(current_user: User = Depends(get_current_user)):
         email=current_user.email,
         name=current_user.name,
         role=current_user.role,
+        grade=current_user.grade,
+        section=current_user.section,
         created_at=current_user.created_at,
     )

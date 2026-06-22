@@ -50,6 +50,8 @@ export type Announcement = {
   title: string;
   body: string;
   priority: AnnouncementPriority;
+  grade?: string | null;
+  section?: string | null;
   read_count: number;
   created_at: string;
 };
@@ -58,6 +60,8 @@ export type AnnouncementCreate = {
   title: string;
   body: string;
   priority: AnnouncementPriority;
+  grade?: string | null;
+  section?: string | null;
 };
 
 export const SUBJECTS = ['Mathe', 'Sprache', 'Natur', 'Kunst'] as const;

@@ -4,7 +4,8 @@ import { toast } from 'sonner';
 import { BarChart3, Users, Trophy, Sparkles, Send, Bot, User, Clock } from 'lucide-react';
 import type { AnalyticsSummary, ClassroomFilter, QuizResponse } from '@/types';
 import { GRADES, SECTIONS, SUBJECTS } from '@/types';
-import { analyticsApi, quizApi, subjectApi } from '@/services/api';
+import { analyticsApi, quizApi, subjectApi, aiChatApi } from '@/services/api';
+import type { AIChatMessage, AnalyticsContext } from '@/services/api';
 import ClassroomSelects from '@/components/ClassroomSelects';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -102,24 +103,39 @@ export default function AnalyticsPage() {
     }
   };
 
-  const handleSendMessage = (content: string) => {
+  const handleSendMessage = async (content: string) => {
     if (!content.trim()) return;
     setMessages(prev => [...prev, { role: 'user', content }]);
     setChatInput('');
     setChatLoading(true);
 
-    // Mock AI response for now
-    setTimeout(() => {
-      const mockResponses = [
-        "Die meisten Schüler hatten Probleme bei den Multiple-Choice Fragen zu diesem Thema.",
-        "Ich empfehle, das Thema im nächsten Unterricht mit einem kurzen Auffrischungs-Quiz zu beginnen.",
-        "Zwei Schüler haben das letzte Quiz noch nicht abgeschlossen.",
-        "Basierend auf den Daten würde ich vorschlagen, den Fokus auf praktische Anwendungsbeispiele zu legen."
-      ];
-      const randomResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)];
-      setMessages(prev => [...prev, { role: 'ai', content: randomResponse }]);
+    try {
+      // Build analytics context from current data
+      const analyticsContext: AnalyticsContext = {
+        subject: classroom.subject,
+        grade: classroom.grade,
+        section: classroom.section,
+        avg_score: data?.avg_score ?? 0,
+        completion_rate: data?.completion_rate ?? 0,
+        students_count: data?.students_count ?? 0,
+        topics: data?.topics.map(t => ({ topic: t.topic, accuracy: t.accuracy, status: t.status })) ?? [],
+        recent_quizzes: classQuizzes.map(q => ({
+          title: q.title,
+          level_number: q.level_number ?? null,
+          created_at: q.created_at,
+        })),
+      };
+
+      // Build history (exclude the initial greeting)
+      const history: AIChatMessage[] = messages.map(m => ({ role: m.role, content: m.content }));
+
+      const response = await aiChatApi.send(content, 'analytics', history, analyticsContext);
+      setMessages(prev => [...prev, { role: 'ai', content: response.reply }]);
+    } catch {
+      setMessages(prev => [...prev, { role: 'ai', content: 'Entschuldigung, es gab einen Fehler bei der Verbindung zur KI. Bitte versuche es erneut.' }]);
+    } finally {
       setChatLoading(false);
-    }, 1500);
+    }
   };
 
   const chartData = data?.topics.map((t) => ({

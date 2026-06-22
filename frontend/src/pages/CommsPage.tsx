@@ -1,8 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { Send, Sparkles, User, Bot } from 'lucide-react';
+import { GRADES, SECTIONS } from '@/types';
 import type { Announcement, AnnouncementPriority } from '@/types';
-import { announcementsApi } from '@/services/api';
+import { announcementsApi, aiChatApi } from '@/services/api';
+import type { AIChatMessage, CommsContext } from '@/services/api';
 import { formatRelativeTime } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const PRIORITIES: AnnouncementPriority[] = ['Normal', 'Important', 'Urgent'];
 
@@ -39,6 +42,8 @@ export default function CommsPage() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [priority, setPriority] = useState<AnnouncementPriority>('Normal');
+  const [targetGrade, setTargetGrade] = useState<string>('all');
+  const [targetSection, setTargetSection] = useState<string>('all');
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -74,11 +79,15 @@ export default function CommsPage() {
         title: title.trim(),
         body: body.trim(),
         priority,
+        grade: targetGrade === 'all' ? null : targetGrade,
+        section: targetSection === 'all' ? null : targetSection,
       });
       setAnnouncements((prev) => [created, ...prev]);
       setTitle('');
       setBody('');
       setPriority('Normal');
+      setTargetGrade('all');
+      setTargetSection('all');
       toast.success('Ankündigung gesendet.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Ankündigung konnte nicht gesendet werden.');
@@ -87,32 +96,44 @@ export default function CommsPage() {
     }
   };
 
-  const handleSendMessage = (content: string) => {
+  const handleSendMessage = async (content: string) => {
     if (!content.trim()) return;
     setMessages(prev => [...prev, { role: 'user', content }]);
     setChatInput('');
     setChatLoading(true);
 
-    // Mock AI response logic
-    setTimeout(() => {
-      let responseText = "Ich habe die Nachrichten geprüft. Aktuell liegen keine kritischen Fragen von Eltern vor.";
-      
-      // If asking for a summary
-      if (content.toLowerCase().includes('zusammenfassen') || content.toLowerCase().includes('zusammenfassung')) {
-        responseText = "Du hast 3 ungelesene Nachrichten. Familie Müller fragt nach dem Treffpunkt für den Ausflug, Familie Schmidt hat sich für Freitag krankgemeldet und ein weiteres Elternteil hat die Lesebestätigung für den letzten Brief gesendet.";
-      }
-      
-      // If asking to draft a message
-      if (content.toLowerCase().includes('entwurf') || content.toLowerCase().includes('erinnerung')) {
-        responseText = "Ich habe einen Entwurf für den Elternabend vorbereitet und ihn oben in das Textfeld eingefügt. Du kannst ihn dort noch anpassen.";
-        setTitle("Erinnerung: Elternabend am Donnerstag");
-        setBody("Liebe Eltern,\n\nich möchte Sie noch einmal herzlich an unseren anstehenden Elternabend diesen Donnerstag um 19:00 Uhr im Klassenzimmer erinnern.\n\nWir werden wichtige Themen für das kommende Halbjahr besprechen.\n\nIch freue mich auf Ihr Kommen!\nHerzliche Grüße");
-        setPriority('Important');
-      }
+    try {
+      // Build comms context from current announcements
+      const commsContext: CommsContext = {
+        announcements: announcements.map(a => ({
+          title: a.title,
+          body: a.body,
+          priority: a.priority,
+          grade: a.grade,
+          section: a.section,
+          created_at: a.created_at,
+        })),
+      };
 
-      setMessages(prev => [...prev, { role: 'ai', content: responseText }]);
+      const history: AIChatMessage[] = messages.map(m => ({ role: m.role, content: m.content }));
+
+      const response = await aiChatApi.send(content, 'comms', history, undefined, commsContext);
+      setMessages(prev => [...prev, { role: 'ai', content: response.reply }]);
+
+      // If the AI generated a draft, auto-fill the compose form
+      if (response.action?.type === 'draft') {
+        setTitle(response.action.title);
+        setBody(response.action.body);
+        const p = response.action.priority as AnnouncementPriority;
+        if (['Normal', 'Important', 'Urgent'].includes(p)) {
+          setPriority(p);
+        }
+      }
+    } catch {
+      setMessages(prev => [...prev, { role: 'ai', content: 'Entschuldigung, es gab einen Fehler bei der Verbindung zur KI. Bitte versuche es erneut.' }]);
+    } finally {
       setChatLoading(false);
-    }, 1500);
+    }
   };
 
   return (
@@ -170,6 +191,38 @@ export default function CommsPage() {
                   ))}
                 </ToggleGroup>
               </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="target-grade">Empfängerstufe (Grade)</Label>
+                  <Select value={targetGrade} onValueChange={setTargetGrade}>
+                    <SelectTrigger id="target-grade" className="h-11">
+                      <SelectValue placeholder="Empfängerstufe" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Alle Stufen</SelectItem>
+                      {GRADES.map((g) => (
+                        <SelectItem key={g} value={g}>{g}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="target-section">Empfängerklasse (Section)</Label>
+                  <Select value={targetSection} onValueChange={setTargetSection}>
+                    <SelectTrigger id="target-section" className="h-11">
+                      <SelectValue placeholder="Empfängerklasse" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Alle Klassen</SelectItem>
+                      {SECTIONS.map((s) => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               <Button
                 onClick={handleSend}
                 disabled={!title.trim() || !body.trim() || sending}
@@ -190,9 +243,19 @@ export default function CommsPage() {
               <CardContent>
                 <div className="rounded-xl border bg-card p-6 shadow-sm">
                   <div className="flex items-start justify-between gap-2 mb-4">
-                    <h3 className="font-serif text-xl font-medium">
-                      {title.trim() || 'Hier erscheint dein Titel'}
-                    </h3>
+                    <div>
+                      <h3 className="font-serif text-xl font-medium">
+                        {title.trim() || 'Hier erscheint dein Titel'}
+                      </h3>
+                      <div className="flex gap-2 mt-1.5 flex-wrap">
+                        <Badge variant="outline" className="text-xs">
+                          {targetGrade === 'all' ? 'Alle Stufen' : targetGrade}
+                        </Badge>
+                        <Badge variant="outline" className="text-xs">
+                          {targetSection === 'all' ? 'Alle Klassen' : targetSection}
+                        </Badge>
+                      </div>
+                    </div>
                     <Badge variant={priorityBadge[priority]}>{priorityLabel[priority]}</Badge>
                   </div>
                   <p className="text-base text-muted-foreground leading-relaxed whitespace-pre-wrap">
@@ -216,7 +279,17 @@ export default function CommsPage() {
                 {announcements.map((item) => (
                   <div key={item.id} className="rounded-xl border bg-card p-4 space-y-2">
                     <div className="flex items-start justify-between gap-2">
-                      <h4 className="font-medium text-base">{item.title}</h4>
+                      <div>
+                        <h4 className="font-medium text-base">{item.title}</h4>
+                        <div className="flex gap-1.5 mt-1 flex-wrap">
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                            {item.grade ? item.grade : 'Alle Stufen'}
+                          </Badge>
+                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                            {item.section ? item.section : 'Alle Klassen'}
+                          </Badge>
+                        </div>
+                      </div>
                       <Badge variant={priorityBadge[item.priority as AnnouncementPriority]} className="text-[10px]">
                         {priorityLabel[item.priority as AnnouncementPriority] ?? item.priority}
                       </Badge>

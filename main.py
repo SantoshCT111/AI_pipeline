@@ -11,6 +11,7 @@ from api.analytics_route import router as analytics_router
 from api.announcements_route import router as announcements_router
 from api.results_route import router as results_router
 from api.subjects_route import router as subjects_router
+from api.ai_chat_route import router as ai_chat_router
 from database import Base, SessionLocal, engine, seed_database
 
 
@@ -53,4 +54,5 @@ app.include_router(results_router, prefix="/api/v1", tags=["Student Results"])
 app.include_router(analytics_router, prefix="/api/v1", tags=["Analytics"])
 app.include_router(announcements_router, prefix="/api/v1", tags=["Announcements"])
 app.include_router(subjects_router, prefix="/api/v1", tags=["Subjects"])
+app.include_router(ai_chat_router, prefix="/api/v1", tags=["AI Chat"])
 

@@ -190,12 +190,16 @@ def seed_database(db: Session) -> None:
                 "password": "teacher123",
                 "name": "Frau Schmidt",
                 "role": "teacher",
+                "grade": None,
+                "section": None,
             },
             {
                 "email": "student@edugo.com",
                 "password": "student123",
                 "name": "Max Müller",
                 "role": "student",
+                "grade": "Grade 8",
+                "section": "Section B",
             },
         ]
         for u in dummy_users:
@@ -205,6 +209,8 @@ def seed_database(db: Session) -> None:
                 password_hash=pw_hash,
                 name=u["name"],
                 role=u["role"],
+                grade=u["grade"],
+                section=u["section"],
             ))
 
     db.commit()

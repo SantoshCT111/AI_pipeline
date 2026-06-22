@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
@@ -14,7 +15,10 @@ import {
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { analyticsApi, quizApi, announcementsApi, subjectApi } from '@/services/api';
+import { formatRelativeTime } from '@/lib/format';
 
 const quickActions = [
   {
@@ -55,48 +59,115 @@ const quickActions = [
   },
 ];
 
-const metrics = [
-  { id: 'aktive-schueler',   label: 'Aktive Schüler',   value: '—', icon: Users },
-  { id: 'quizze-erstellt',   label: 'Quizze erstellt',   value: '—', icon: Sparkles },
-  { id: 'durchschnittsnote', label: 'Ø Ergebnis',        value: '—', icon: TrendingUp },
-  { id: 'abschlussquote',    label: 'Abschlussquote',    value: '—', icon: CheckCircle2 },
-];
+interface MetricData {
+  activeStudents: string;
+  quizzesCreated: string;
+  avgScore: string;
+  completionRate: string;
+}
 
-const recentActivity = [
-  {
-    id: 'akt-1',
-    icon: Sparkles,
-    label: 'Quiz aus „Kapitel 5 – Photosynthese.pdf" erstellt',
-    time: 'vor 2 Min.',
-    accent: 'text-primary bg-primary/10',
-  },
-  {
-    id: 'akt-2',
-    icon: BarChart3,
-    label: '24 Schüler haben „Sprache · Stufe 3" abgeschlossen',
-    time: 'vor 1 Std.',
-    accent: 'text-emerald-700 bg-emerald-50',
-  },
-  {
-    id: 'akt-3',
-    icon: BookOpen,
-    label: 'Neues Fach „Kunst" zum Lehrplan hinzugefügt',
-    time: 'vor 3 Std.',
-    accent: 'text-amber-700 bg-amber-50',
-  },
-  {
-    id: 'akt-4',
-    icon: MessageSquare,
-    label: 'Nachricht an Klasse 8 – Gruppe B gesendet',
-    time: 'Gestern',
-    accent: 'text-sky-700 bg-sky-50',
-  },
-];
+interface ActivityItem {
+  id: string;
+  icon: typeof Sparkles;
+  label: string;
+  time: string;
+  accent: string;
+}
 
 export default function HomePage() {
   const hour = new Date().getHours();
   const greeting =
     hour < 12 ? 'Guten Morgen' : hour < 17 ? 'Guten Tag' : 'Guten Abend';
+
+  const [metricsLoading, setMetricsLoading] = useState(true);
+  const [metricData, setMetricData] = useState<MetricData>({
+    activeStudents: '—',
+    quizzesCreated: '—',
+    avgScore: '—',
+    completionRate: '—',
+  });
+  const [recentActivity, setRecentActivity] = useState<ActivityItem[]>([]);
+
+  useEffect(() => {
+    // Fetch real metrics from multiple sources
+    const fetchMetrics = async () => {
+      try {
+        const [quizzes, announcements, subjects] = await Promise.all([
+          quizApi.list(),
+          announcementsApi.list(),
+          subjectApi.list(),
+        ]);
+
+        // Try to get analytics for the first available subject
+        let avgScore = 0;
+        let completionRate = 0;
+        let studentsCount = 0;
+
+        if (subjects.length > 0) {
+          try {
+            const summary = await analyticsApi.getSummary({
+              subject: subjects[0].name,
+              grade: '8',
+              section: 'B',
+            });
+            avgScore = summary.avg_score;
+            completionRate = summary.completion_rate;
+            studentsCount = summary.students_count;
+          } catch {
+            // Analytics may not have data for this combination
+          }
+        }
+
+        setMetricData({
+          activeStudents: studentsCount > 0 ? studentsCount.toString() : '—',
+          quizzesCreated: quizzes.length.toString(),
+          avgScore: avgScore > 0 ? `${Math.round(avgScore)}%` : '—',
+          completionRate: completionRate > 0 ? `${Math.round(completionRate)}%` : '—',
+        });
+
+        // Build real activity feed from quizzes and announcements
+        const activities: ActivityItem[] = [];
+
+        // Add recent quizzes
+        quizzes.slice(0, 3).forEach((q, i) => {
+          activities.push({
+            id: `quiz-${q.id}`,
+            icon: Sparkles,
+            label: `Quiz „${q.title}" erstellt (${q.subject} · ${q.grade})`,
+            time: formatRelativeTime(q.created_at),
+            accent: 'text-primary bg-primary/10',
+          });
+        });
+
+        // Add recent announcements
+        announcements.slice(0, 2).forEach((a) => {
+          activities.push({
+            id: `ann-${a.id}`,
+            icon: MessageSquare,
+            label: `Ankündigung „${a.title}" gesendet`,
+            time: formatRelativeTime(a.created_at),
+            accent: 'text-sky-700 bg-sky-50',
+          });
+        });
+
+        // Sort by recency (already sorted from API) and take top 4
+        setRecentActivity(activities.slice(0, 4));
+      } catch {
+        // Keep defaults on error
+      } finally {
+        setMetricsLoading(false);
+      }
+    };
+
+    fetchMetrics();
+  }, []);
+
+  const metrics = [
+    { id: 'aktive-schueler',   label: 'Aktive Schüler',   value: metricData.activeStudents, icon: Users },
+    { id: 'quizze-erstellt',   label: 'Quizze erstellt',   value: metricData.quizzesCreated, icon: Sparkles },
+    { id: 'durchschnittsnote', label: 'Ø Ergebnis',        value: metricData.avgScore, icon: TrendingUp },
+    { id: 'abschlussquote',    label: 'Abschlussquote',    value: metricData.completionRate, icon: CheckCircle2 },
+  ];
 
   return (
     <div className="space-y-14 animate-fade-in">
@@ -134,11 +205,12 @@ export default function HomePage() {
                     <Icon size={22} aria-hidden="true" />
                   </div>
                 </div>
-                <p className="font-serif text-4xl font-medium text-foreground mb-1">{value}</p>
+                {metricsLoading ? (
+                  <Skeleton className="h-10 w-20 mb-1" />
+                ) : (
+                  <p className="font-serif text-4xl font-medium text-foreground mb-1">{value}</p>
+                )}
                 <p className="text-base text-muted-foreground font-medium">{label}</p>
-                <p className="mt-2 text-sm text-muted-foreground/70">
-                  Live-Daten folgen bald
-                </p>
               </CardContent>
               <span
                 aria-hidden="true"
@@ -216,7 +288,17 @@ export default function HomePage() {
 
           <Card>
             <CardContent className="p-0 divide-y divide-border">
-              {recentActivity.map(({ id, icon: Icon, label, time, accent }) => (
+              {metricsLoading && [1, 2, 3].map((i) => (
+                <div key={i} className="px-6 py-5">
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ))}
+              {!metricsLoading && recentActivity.length === 0 && (
+                <div className="px-6 py-10 text-center text-muted-foreground text-sm">
+                  Noch keine Aktivitäten vorhanden.
+                </div>
+              )}
+              {!metricsLoading && recentActivity.map(({ id, icon: Icon, label, time, accent }) => (
                 <div key={id} className="flex items-start gap-4 px-6 py-5">
                   <div className={cn(
                     'mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg',
