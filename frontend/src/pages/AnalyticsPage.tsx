@@ -46,59 +46,42 @@ export default function AnalyticsPage() {
 
   // AI Chat State
   const [messages, setMessages] = useState<{ role: 'user' | 'ai'; content: string }[]>([
-    { role: 'ai', content: 'Hallo! Ich habe die Leistungsdaten analysiert. Frag mich gerne, falls du bestimmte Details brauchst.' }
+    { role: 'ai', content: 'Hallo! Ich lade gerade die Leistungsdaten …' }
   ]);
   const [chatInput, setChatInput] = useState('');
   const [chatLoading, setChatLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    subjectApi.list().then((res) => {
-      const names = res.map((s) => s.name);
-      setDbSubjects(names);
-      if (names.length > 0) {
-        setClassroom((prev) => ({ ...prev, subject: names[0] }));
-      }
-    }).catch(() => {});
-  }, []);
-
-  // Auto-scroll chat to bottom
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  // Automatically fetch data when classroom filter changes
-  useEffect(() => {
-    if (classroom.subject) {
-      handleFetchData();
-    }
-  }, [classroom.subject, classroom.grade, classroom.section]);
-
-  const handleFetchData = async () => {
+  // Core fetch function — accepts explicit classroom to avoid stale closure
+  const fetchClassData = async (filter: ClassroomFilter) => {
     setLoading(true);
     try {
-      // Fetch both summary and quiz list for this class
       const [summary, allQuizzes] = await Promise.all([
-        analyticsApi.getSummary(classroom),
+        analyticsApi.getSummary(filter),
         quizApi.list()
       ]);
       setData(summary);
-      
-      // Filter quizzes to match current classroom selection
-      const filteredQuizzes = allQuizzes.filter(q => 
-        q.subject.toLowerCase() === classroom.subject.toLowerCase() &&
-        q.grade === classroom.grade &&
-        q.section === classroom.section
+
+      const filteredQuizzes = allQuizzes.filter(q =>
+        q.subject.toLowerCase() === filter.subject.toLowerCase() &&
+        q.grade === filter.grade &&
+        q.section === filter.section
       );
       setClassQuizzes(filteredQuizzes);
 
-      // Give a proactive AI insight if data is loaded
-      if (summary.topics.some(t => t.status === 'Needs review')) {
-        setMessages(prev => [
-          ...prev,
-          { role: 'ai', content: `Ich sehe, dass das Thema "${summary.topics.find(t => t.status === 'Needs review')?.topic}" besondere Aufmerksamkeit benötigt. Soll ich Übungsfragen dazu generieren?` }
+      // Proactive AI insight on load
+      const needsReview = summary.topics.find(t => t.status === 'Needs review');
+      if (needsReview) {
+        setMessages([
+          { role: 'ai', content: `Ich habe die Daten für ${filter.subject} (${filter.grade}, ${filter.section}) geladen. Das Thema „${needsReview.topic}" benötigt besondere Aufmerksamkeit (${Math.round(needsReview.accuracy)}% Genauigkeit). Was möchtest du wissen?` }
+        ]);
+      } else if (summary.students_count > 0) {
+        setMessages([
+          { role: 'ai', content: `Daten für ${filter.subject} (${filter.grade}, ${filter.section}) geladen: ${summary.students_count} Schüler, Ø ${Math.round(summary.avg_score)}%, Abschlussquote ${Math.round(summary.completion_rate)}%. Wie kann ich dir helfen?` }
+        ]);
+      } else {
+        setMessages([
+          { role: 'ai', content: `Für ${filter.subject} (${filter.grade}, ${filter.section}) liegen noch keine Daten vor. Wähle eine andere Klasse oder lade zuerst Quizze hoch.` }
         ]);
       }
     } catch (err) {
@@ -109,6 +92,31 @@ export default function AnalyticsPage() {
       setLoading(false);
     }
   };
+
+  const handleFetchData = () => fetchClassData(classroom);
+
+  // On mount: load subjects, then immediately fetch data for the resolved subject
+  useEffect(() => {
+    subjectApi.list().then((res) => {
+      const names = res.map((s) => s.name);
+      setDbSubjects(names);
+      const subject = names.length > 0 ? names[0] : SUBJECTS[0];
+      const filter = { subject, grade: GRADES[2], section: SECTIONS[1] };
+      setClassroom(filter);
+      fetchClassData(filter);   // fetch immediately with resolved subject
+    }).catch(() => {
+      // Fallback: still try to fetch with defaults
+      fetchClassData({ subject: SUBJECTS[0], grade: GRADES[2], section: SECTIONS[1] });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-scroll chat to bottom
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const handleSendMessage = async (content: string) => {
     if (!content.trim()) return;
