@@ -69,6 +69,13 @@ export default function AnalyticsPage() {
     }
   }, [messages]);
 
+  // Automatically fetch data when classroom filter changes
+  useEffect(() => {
+    if (classroom.subject) {
+      handleFetchData();
+    }
+  }, [classroom.subject, classroom.grade, classroom.section]);
+
   const handleFetchData = async () => {
     setLoading(true);
     try {

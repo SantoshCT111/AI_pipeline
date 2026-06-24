@@ -41,6 +41,17 @@ def seed_database(db: Session) -> None:
             ],
         },
         {
+            "subject": "Sprache",
+            "grade": "Grade 8",
+            "section": "Section B",
+            "metrics": {"avg_score": 76.5, "completion_rate": 89.0, "students_count": 25},
+            "topics": [
+                {"topic": "Reading comprehension", "accuracy": 65.0, "status": "Needs review"},
+                {"topic": "Grammar", "accuracy": 82.0, "status": "Stable"},
+                {"topic": "Spelling", "accuracy": 78.0, "status": "Improving"},
+            ],
+        },
+        {
             "subject": "Kunst",
             "grade": "Grade 8",
             "section": "Section B",
