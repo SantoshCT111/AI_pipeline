@@ -1,19 +1,19 @@
-import { useState } from 'react';
 import { toast } from 'sonner';
 import { Sparkles } from 'lucide-react';
-import type { ForgePhase, QuizTask } from '@/types';
+import type { QuizTask } from '@/types';
 import { quizApi } from '@/services/api';
+import { useForge } from '@/contexts/ForgeContext';
 import FileDropZone from '@/components/forge/FileDropZone';
 import TextInputArea from '@/components/forge/TextInputArea';
 import LoadingState from '@/components/forge/LoadingState';
 import QuestionCardList from '@/components/forge/QuestionCardList';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useState } from 'react';
 
 export default function AIForgePage() {
-  const [phase, setPhase] = useState<ForgePhase>('input');
-  const [tasks, setTasks] = useState<QuizTask[]>([]);
-  const [error, setError] = useState<string | null>(null);
+  // State lives in ForgeContext so it survives navigation between pages
+  const { phase, tasks, error, setPhase, setTasks, setError, updateTask, deleteTask, reset } = useForge();
   const [inputMode, setInputMode] = useState<'file' | 'text'>('file');
 
   const handleGenerateFromFile = async (file: File) => {
@@ -46,19 +46,9 @@ export default function AIForgePage() {
     }
   };
 
-  const handleUpdateTask = (index: number, updatedTask: QuizTask) => {
-    setTasks((prev) => prev.map((t, i) => (i === index ? updatedTask : t)));
-  };
-
-  const handleDeleteTask = (index: number) => {
-    setTasks((prev) => prev.filter((_, i) => i !== index));
-  };
-
-  const handleStartOver = () => {
-    setPhase('input');
-    setTasks([]);
-    setError(null);
-  };
+  const handleUpdateTask = (index: number, updatedTask: QuizTask) => updateTask(index, updatedTask);
+  const handleDeleteTask = (index: number) => deleteTask(index);
+  const handleStartOver = () => reset();
 
   if (phase === 'processing') {
     return <LoadingState />;

@@ -8,6 +8,7 @@ import {
   Wand2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useForge } from '@/contexts/ForgeContext';
 
 const navItems = [
   { to: '/',          label: 'Startseite',  icon: Home,          end: true  },
@@ -33,6 +34,8 @@ export default function NavRail({
   onNavigate,
   embedded = false,
 }: NavRailProps) {
+  const { phase } = useForge();
+  const forgeInProgress = phase !== 'input';
   return (
     <nav
       aria-label="Hauptnavigation"
@@ -121,19 +124,33 @@ export default function NavRail({
                       className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r-full bg-primary"
                     />
                   )}
-                  <Icon
-                    size={22}
-                    aria-hidden="true"
-                    className={cn(
-                      'shrink-0 transition-colors',
-                      isActive
-                        ? 'text-primary'
-                        : 'text-muted-foreground group-hover:text-foreground',
+                  <div className="relative shrink-0">
+                    <Icon
+                      size={22}
+                      aria-hidden="true"
+                      className={cn(
+                        'transition-colors',
+                        isActive
+                          ? 'text-primary'
+                          : 'text-muted-foreground group-hover:text-foreground',
+                      )}
+                    />
+                    {/* Pulsing dot when a quiz is in progress */}
+                    {to === '/forge' && forgeInProgress && !isActive && (
+                      <span
+                        aria-label="Quiz in Bearbeitung"
+                        className="absolute -top-1 -right-1 h-2.5 w-2.5 rounded-full bg-primary animate-pulse border-2 border-background"
+                      />
                     )}
-                  />
+                  </div>
                   {!isCollapsed && (
                     <span className={cn('truncate', isActive ? 'text-primary' : '')}>
                       {label}
+                      {to === '/forge' && forgeInProgress && !isActive && (
+                        <span className="ml-2 text-[10px] font-bold text-primary bg-primary/10 rounded-full px-1.5 py-0.5">
+                          In Bearbeitung
+                        </span>
+                      )}
                     </span>
                   )}
                 </>

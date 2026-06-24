@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Toaster } from '@/components/ui/sonner';
 import { authApi } from '@/services/api';
+import { ForgeProvider } from '@/contexts/ForgeContext';
 import DashboardLayout from '@/layouts/DashboardLayout';
 import LoginPage from '@/pages/LoginPage';
 import HomePage from '@/pages/HomePage';
@@ -28,7 +29,9 @@ export default function App() {
         {/* Protected routes */}
         <Route element={
           <ProtectedRoute>
-            <DashboardLayout />
+            <ForgeProvider>
+              <DashboardLayout />
+            </ForgeProvider>
           </ProtectedRoute>
         }>
           <Route index element={<HomePage />} />
