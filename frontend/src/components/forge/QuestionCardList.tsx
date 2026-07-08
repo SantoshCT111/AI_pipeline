@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { BookOpen, Layers, RotateCcw, Send } from 'lucide-react';
-import type { ClassroomFilter, QuizTask, Subject, QuizResponse } from '@/types';
+import { BookOpen, RotateCcw, Send } from 'lucide-react';
+import type { ClassroomFilter, QuizTask, Subject } from '@/types';
 import { DEFAULT_GRADE, DEFAULT_SECTION, SUBJECTS } from '@/types';
 import { quizApi, subjectApi } from '@/services/api';
 import QuestionCard from './QuestionCard';
@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
 import {
   Dialog,
   DialogContent,
@@ -45,39 +44,15 @@ export default function QuestionCardList({
   const [publishing, setPublishing] = useState(false);
   const [quizTitle, setQuizTitle] = useState('Lektion Quiz');
 
-  // ── Assignment state (now lives in the sidebar) ──────────
   const [selectedSubject, setSelectedSubject] = useState<string>('');
-  const [levelNumber, setLevelNumber] = useState<number | null>(null);
-
   const [dbSubjects, setDbSubjects] = useState<Subject[]>([]);
-  const [existingQuizzes, setExistingQuizzes] = useState<QuizResponse[]>([]);
 
   useEffect(() => {
     subjectApi.list().then((data) => {
       setDbSubjects(data);
       if (data.length > 0) setSelectedSubject(data[0].name);
     }).catch(() => {});
-    quizApi.list().then(setExistingQuizzes).catch(() => {});
   }, []);
-
-  // Auto-suggest next available level for selected subject
-  useEffect(() => {
-    if (!selectedSubject || dbSubjects.length === 0) return;
-    const subj = dbSubjects.find((s) => s.name === selectedSubject);
-    if (!subj) return;
-    const usedLevels = new Set(
-      existingQuizzes
-        .filter((q) => q.subject.toLowerCase() === selectedSubject.toLowerCase())
-        .map((q) => q.level_number)
-        .filter((n): n is number => n != null),
-    );
-    const nextLevel = subj.levels.find((l) => !usedLevels.has(l.level_number));
-    setLevelNumber(nextLevel ? nextLevel.level_number : subj.levels.length > 0 ? 1 : null);
-  }, [selectedSubject, dbSubjects, existingQuizzes]);
-
-  const activeSubject = dbSubjects.find((s) => s.name === selectedSubject);
-  const subjectLevels = activeSubject ? activeSubject.levels : [];
-  const currentLevel = subjectLevels.find((l) => l.level_number === levelNumber);
 
   const mcCount = tasks.filter((t) => t.question_type === 'multiple_choice').length;
   const tfCount = tasks.filter((t) => t.question_type === 'true_false').length;
@@ -100,7 +75,7 @@ export default function QuestionCardList({
     }
     setPublishing(true);
     try {
-      await quizApi.publish({ title: quizTitle.trim(), ...classroom, level_number: levelNumber, tasks });
+      await quizApi.publish({ title: quizTitle.trim(), ...classroom, level_number: null, tasks });
       toast.success(`Quiz veröffentlicht für ${selectedSubject}`);
       setPublishOpen(false);
       onStartOver();
@@ -111,12 +86,11 @@ export default function QuestionCardList({
     }
   };
 
-  // Sidebar selectors — subject list: prefer DB subjects, fall back to static
   const subjectOptions = dbSubjects.length > 0 ? dbSubjects.map((s) => s.name) : SUBJECTS;
   const assignmentComplete = !!selectedSubject;
 
   return (
-    <div className="animate-fade-in grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
+    <div className="animate-fade-in grid gap-8 lg:grid-cols-[300px_minmax(0,1fr)]">
 
       {/* ── Sticky sidebar ──────────────────────────────── */}
       <aside className="space-y-3 lg:sticky lg:top-24 lg:self-start lg:pb-6">
@@ -142,18 +116,18 @@ export default function QuestionCardList({
           </CardContent>
         </Card>
 
+        {/* Assignment — subject only */}
         <Card className="border-primary/20 bg-primary/[0.025]">
           <CardHeader className="pb-2 pt-4 px-4">
             <CardDescription className="text-primary font-bold text-[10px] tracking-widest uppercase m-0">Zuweisung</CardDescription>
             <CardTitle className="text-sm font-semibold mt-0.5">An wen geht das Quiz?</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2.5 px-4 pb-4">
-
             <div className="space-y-1">
               <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
                 <BookOpen size={10} /> Fach
               </Label>
-              <Select value={selectedSubject} onValueChange={(v) => { setSelectedSubject(v); setLevelNumber(null); }}>
+              <Select value={selectedSubject} onValueChange={setSelectedSubject}>
                 <SelectTrigger className="h-8 text-sm">
                   <SelectValue placeholder="Fach wählen …" />
                 </SelectTrigger>
@@ -165,33 +139,10 @@ export default function QuestionCardList({
               </Select>
             </div>
 
-            <div className="space-y-1">
-              <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
-                <Layers size={10} /> App-Stufe
-                <Badge variant="outline" className="ml-auto text-[9px] px-1.5 py-0 h-4 font-normal">Optional</Badge>
-              </Label>
-              <Select
-                value={levelNumber?.toString() ?? 'none'}
-                onValueChange={(v) => setLevelNumber(v === 'none' ? null : parseInt(v))}
-              >
-                <SelectTrigger className="h-8 text-sm">
-                  <SelectValue placeholder="Stufe …" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none" className="text-sm">Standard / Global</SelectItem>
-                  {subjectLevels.map((lvl) => (
-                    <SelectItem key={lvl.level_number} value={lvl.level_number.toString()} className="text-sm">
-                      Stufe {lvl.level_number}: {lvl.title}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
             {assignmentComplete && (
               <div className="rounded-md bg-primary/10 border border-primary/20 px-3 py-2 text-xs text-primary font-semibold flex items-center gap-1.5">
                 <span>📌</span>
-                <span className="truncate">{selectedSubject}{currentLevel ? ` · Stufe ${currentLevel.level_number}` : ''}</span>
+                <span className="truncate">{selectedSubject}</span>
               </div>
             )}
           </CardContent>
@@ -212,7 +163,7 @@ export default function QuestionCardList({
           </Button>
           {!assignmentComplete && (
             <p className="text-center text-xs text-muted-foreground leading-snug">
-              Bitte zuerst Fach und Klasse auswählen.
+              Bitte zuerst ein Fach auswählen.
             </p>
           )}
         </div>
@@ -239,7 +190,7 @@ export default function QuestionCardList({
         )}
       </section>
 
-      {/* ── Lightweight confirm dialog (title only) ──────── */}
+      {/* ── Publish dialog ────────────────────────────────── */}
       <Dialog open={publishOpen} onOpenChange={setPublishOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
@@ -249,17 +200,9 @@ export default function QuestionCardList({
             </DialogDescription>
           </DialogHeader>
 
-          {/* Compact assignment summary */}
-          <div className="rounded-xl bg-muted/50 border px-5 py-4 text-base">
+          <div className="rounded-xl bg-muted/50 border px-5 py-4">
             <p className="text-sm font-semibold text-muted-foreground mb-2">Zuweisung</p>
-            <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary" className="text-sm px-3 py-1">{selectedSubject}</Badge>
-              {currentLevel && (
-                <Badge variant="outline" className="text-sm px-3 py-1">
-                  Stufe {currentLevel.level_number}
-                </Badge>
-              )}
-            </div>
+            <Badge variant="secondary" className="text-sm px-3 py-1">{selectedSubject}</Badge>
           </div>
 
           <div className="space-y-2">
