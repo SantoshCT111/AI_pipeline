@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
 import { BookOpen, RotateCcw, Send } from 'lucide-react';
-import type { ClassroomFilter, QuizTask, Subject } from '@/types';
+import type { ClassroomFilter, QuizTask, Subject, QuizResponse } from '@/types';
 import { DEFAULT_GRADE, DEFAULT_SECTION, SUBJECTS } from '@/types';
 import { quizApi, subjectApi } from '@/services/api';
 import QuestionCard from './QuestionCard';
@@ -25,7 +25,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
 
 interface QuestionCardListProps {
   tasks: QuizTask[];
@@ -46,13 +45,26 @@ export default function QuestionCardList({
 
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [dbSubjects, setDbSubjects] = useState<Subject[]>([]);
+  const [existingQuizzes, setExistingQuizzes] = useState<QuizResponse[]>([]);
 
   useEffect(() => {
     subjectApi.list().then((data) => {
       setDbSubjects(data);
       if (data.length > 0) setSelectedSubject(data[0].name);
     }).catch(() => {});
+    quizApi.list().then(setExistingQuizzes).catch(() => {});
   }, []);
+
+  // Auto-calculate next level for the selected subject
+  const nextLevelNumber = (() => {
+    if (!selectedSubject) return 1;
+    const used = existingQuizzes
+      .filter((q) => q.subject.toLowerCase() === selectedSubject.toLowerCase())
+      .map((q) => q.level_number)
+      .filter((n): n is number => n != null);
+    if (used.length === 0) return 1;
+    return Math.max(...used) + 1;
+  })();
 
   const mcCount = tasks.filter((t) => t.question_type === 'multiple_choice').length;
   const tfCount = tasks.filter((t) => t.question_type === 'true_false').length;
@@ -75,8 +87,8 @@ export default function QuestionCardList({
     }
     setPublishing(true);
     try {
-      await quizApi.publish({ title: quizTitle.trim(), ...classroom, level_number: null, tasks });
-      toast.success(`Quiz veröffentlicht für ${selectedSubject}`);
+      await quizApi.publish({ title: quizTitle.trim(), ...classroom, level_number: nextLevelNumber, tasks });
+      toast.success(`Quiz veröffentlicht als Stufe ${nextLevelNumber} · ${selectedSubject}`);
       setPublishOpen(false);
       onStartOver();
     } catch (err) {
@@ -116,7 +128,7 @@ export default function QuestionCardList({
           </CardContent>
         </Card>
 
-        {/* Assignment — subject only */}
+        {/* Assignment — subject only, level auto-assigned */}
         <Card className="border-primary/20 bg-primary/[0.025]">
           <CardHeader className="pb-2 pt-4 px-4">
             <CardDescription className="text-primary font-bold text-[10px] tracking-widest uppercase m-0">Zuweisung</CardDescription>
@@ -139,10 +151,11 @@ export default function QuestionCardList({
               </Select>
             </div>
 
+            {/* Auto-level info badge */}
             {assignmentComplete && (
               <div className="rounded-md bg-primary/10 border border-primary/20 px-3 py-2 text-xs text-primary font-semibold flex items-center gap-1.5">
                 <span>📌</span>
-                <span className="truncate">{selectedSubject}</span>
+                <span>{selectedSubject} · wird Stufe {nextLevelNumber}</span>
               </div>
             )}
           </CardContent>
@@ -196,13 +209,16 @@ export default function QuestionCardList({
           <DialogHeader>
             <DialogTitle className="text-2xl">Fast fertig!</DialogTitle>
             <DialogDescription className="text-base mt-1">
-              Nur noch einen Namen für das Quiz vergeben – dann wird es veröffentlicht.
+              Nur noch einen Namen vergeben – das Quiz wird automatisch als Stufe {nextLevelNumber} veröffentlicht.
             </DialogDescription>
           </DialogHeader>
 
           <div className="rounded-xl bg-muted/50 border px-5 py-4">
             <p className="text-sm font-semibold text-muted-foreground mb-2">Zuweisung</p>
-            <Badge variant="secondary" className="text-sm px-3 py-1">{selectedSubject}</Badge>
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="secondary" className="text-sm px-3 py-1">{selectedSubject}</Badge>
+              <Badge variant="outline" className="text-sm px-3 py-1">Stufe {nextLevelNumber}</Badge>
+            </div>
           </div>
 
           <div className="space-y-2">
