@@ -254,8 +254,6 @@ export default function QuestionCardList({
             <p className="text-sm font-semibold text-muted-foreground mb-2">Zuweisung</p>
             <div className="flex flex-wrap gap-2">
               <Badge variant="secondary" className="text-sm px-3 py-1">{selectedSubject}</Badge>
-              <Badge variant="secondary" className="text-sm px-3 py-1">{selectedGrade}</Badge>
-              <Badge variant="secondary" className="text-sm px-3 py-1">{selectedSection}</Badge>
               {currentLevel && (
                 <Badge variant="outline" className="text-sm px-3 py-1">
                   Stufe {currentLevel.level_number}
