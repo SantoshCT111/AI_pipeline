@@ -3,7 +3,7 @@ import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recha
 import { toast } from 'sonner';
 import { BarChart3, Users, Trophy, Sparkles, Send, Bot, User, Clock } from 'lucide-react';
 import type { AnalyticsSummary, ClassroomFilter, QuizResponse } from '@/types';
-import { GRADES, SECTIONS, SUBJECTS } from '@/types';
+import { DEFAULT_GRADE, DEFAULT_SECTION, SUBJECTS } from '@/types';
 import { analyticsApi, quizApi, subjectApi, aiChatApi } from '@/services/api';
 import type { AIChatMessage, AnalyticsContext } from '@/services/api';
 import ClassroomSelects from '@/components/ClassroomSelects';
@@ -36,8 +36,8 @@ const CHAT_SUGGESTIONS = [
 export default function AnalyticsPage() {
   const [classroom, setClassroom] = useState<ClassroomFilter>({
     subject: SUBJECTS[0],
-    grade: GRADES[2],
-    section: SECTIONS[1],
+    grade: DEFAULT_GRADE,
+    section: DEFAULT_SECTION,
   });
   const [dbSubjects, setDbSubjects] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -73,15 +73,15 @@ export default function AnalyticsPage() {
       const needsReview = summary.topics.find(t => t.status === 'Needs review');
       if (needsReview) {
         setMessages([
-          { role: 'ai', content: `Ich habe die Daten für ${filter.subject} (${filter.grade}, ${filter.section}) geladen. Das Thema „${needsReview.topic}" benötigt besondere Aufmerksamkeit (${Math.round(needsReview.accuracy)}% Genauigkeit). Was möchtest du wissen?` }
+          { role: 'ai', content: `Daten für ${filter.subject} geladen. Das Thema „${needsReview.topic}" benötigt besondere Aufmerksamkeit (${Math.round(needsReview.accuracy)}% Genauigkeit). Was möchtest du wissen?` }
         ]);
       } else if (summary.students_count > 0) {
         setMessages([
-          { role: 'ai', content: `Daten für ${filter.subject} (${filter.grade}, ${filter.section}) geladen: ${summary.students_count} Schüler, Ø ${Math.round(summary.avg_score)}%, Abschlussquote ${Math.round(summary.completion_rate)}%. Wie kann ich dir helfen?` }
+          { role: 'ai', content: `Daten für ${filter.subject} geladen: ${summary.students_count} Schüler, Ø ${Math.round(summary.avg_score)}%, Abschlussquote ${Math.round(summary.completion_rate)}%. Wie kann ich dir helfen?` }
         ]);
       } else {
         setMessages([
-          { role: 'ai', content: `Für ${filter.subject} (${filter.grade}, ${filter.section}) liegen noch keine Daten vor. Wähle eine andere Klasse oder lade zuerst Quizze hoch.` }
+          { role: 'ai', content: `Für ${filter.subject} liegen noch keine Daten vor. Lade zuerst Quizze hoch.` }
         ]);
       }
     } catch (err) {
@@ -101,12 +101,11 @@ export default function AnalyticsPage() {
       const names = res.map((s) => s.name);
       setDbSubjects(names);
       const subject = names.length > 0 ? names[0] : SUBJECTS[0];
-      const filter = { subject, grade: GRADES[2], section: SECTIONS[1] };
+      const filter: ClassroomFilter = { subject, grade: DEFAULT_GRADE, section: DEFAULT_SECTION };
       setClassroom(filter);
-      fetchClassData(filter);   // fetch immediately with resolved subject
+      fetchClassData(filter);
     }).catch(() => {
-      // Fallback: still try to fetch with defaults
-      fetchClassData({ subject: SUBJECTS[0], grade: GRADES[2], section: SECTIONS[1] });
+      fetchClassData({ subject: SUBJECTS[0], grade: DEFAULT_GRADE, section: DEFAULT_SECTION });
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -172,12 +171,16 @@ export default function AnalyticsPage() {
           </p>
         </div>
 
-        {/* Filter Panel */}
+        {/* Filter Panel — subject only */}
         <Card className="bg-muted/30 border-2">
           <CardContent className="pt-6">
             <div className="flex flex-col sm:flex-row gap-4 items-end">
               <div className="flex-1 w-full">
-                <ClassroomSelects values={classroom} onChange={setClassroom} subjectsList={dbSubjects} />
+                <ClassroomSelects
+                  values={classroom}
+                  onChange={(v) => setClassroom({ ...v, grade: DEFAULT_GRADE, section: DEFAULT_SECTION })}
+                  subjectsList={dbSubjects}
+                />
               </div>
               <Button onClick={handleFetchData} disabled={loading} size="lg" className="w-full sm:w-auto text-base h-[52px]">
                 {loading ? 'Lädt …' : 'Daten abrufen'}
@@ -200,7 +203,7 @@ export default function AnalyticsPage() {
             <CardContent className="flex flex-col items-center justify-center py-20 text-center">
               <BarChart3 size={40} className="text-muted-foreground mb-4 opacity-50" />
               <p className="text-base text-muted-foreground max-w-sm">
-                Keine Daten ausgewählt. Bitte wähle Fach, Klasse und Gruppe und klicke auf "Daten abrufen".
+                Wähle ein Fach und klicke auf &quot;Daten abrufen&quot;.
               </p>
             </CardContent>
           </Card>

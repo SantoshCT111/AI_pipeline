@@ -1,7 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { Send, Sparkles, User, Bot } from 'lucide-react';
-import { GRADES, SECTIONS } from '@/types';
 import type { Announcement, AnnouncementPriority } from '@/types';
 import { announcementsApi, aiChatApi } from '@/services/api';
 import type { AIChatMessage, CommsContext } from '@/services/api';
@@ -42,8 +41,6 @@ export default function CommsPage() {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [priority, setPriority] = useState<AnnouncementPriority>('Normal');
-  const [targetGrade, setTargetGrade] = useState<string>('all');
-  const [targetSection, setTargetSection] = useState<string>('all');
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -79,15 +76,11 @@ export default function CommsPage() {
         title: title.trim(),
         body: body.trim(),
         priority,
-        grade: targetGrade === 'all' ? null : targetGrade,
-        section: targetSection === 'all' ? null : targetSection,
       });
       setAnnouncements((prev) => [created, ...prev]);
       setTitle('');
       setBody('');
       setPriority('Normal');
-      setTargetGrade('all');
-      setTargetSection('all');
       toast.success('Ankündigung gesendet.');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Ankündigung konnte nicht gesendet werden.');
@@ -109,8 +102,6 @@ export default function CommsPage() {
           title: a.title,
           body: a.body,
           priority: a.priority,
-          grade: a.grade,
-          section: a.section,
           created_at: a.created_at,
         })),
       };
@@ -191,37 +182,6 @@ export default function CommsPage() {
                   ))}
                 </ToggleGroup>
               </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="target-grade">Empfängerstufe (Grade)</Label>
-                  <Select value={targetGrade} onValueChange={setTargetGrade}>
-                    <SelectTrigger id="target-grade" className="h-11">
-                      <SelectValue placeholder="Empfängerstufe" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Alle Stufen</SelectItem>
-                      {GRADES.map((g) => (
-                        <SelectItem key={g} value={g}>{g}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="target-section">Empfängerklasse (Section)</Label>
-                  <Select value={targetSection} onValueChange={setTargetSection}>
-                    <SelectTrigger id="target-section" className="h-11">
-                      <SelectValue placeholder="Empfängerklasse" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Alle Klassen</SelectItem>
-                      {SECTIONS.map((s) => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
 
               <Button
                 onClick={handleSend}
@@ -247,14 +207,6 @@ export default function CommsPage() {
                       <h3 className="font-serif text-xl font-medium">
                         {title.trim() || 'Hier erscheint dein Titel'}
                       </h3>
-                      <div className="flex gap-2 mt-1.5 flex-wrap">
-                        <Badge variant="outline" className="text-xs">
-                          {targetGrade === 'all' ? 'Alle Stufen' : targetGrade}
-                        </Badge>
-                        <Badge variant="outline" className="text-xs">
-                          {targetSection === 'all' ? 'Alle Klassen' : targetSection}
-                        </Badge>
-                      </div>
                     </div>
                     <Badge variant={priorityBadge[priority]}>{priorityLabel[priority]}</Badge>
                   </div>
@@ -279,17 +231,7 @@ export default function CommsPage() {
                 {announcements.map((item) => (
                   <div key={item.id} className="rounded-xl border bg-card p-4 space-y-2">
                     <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <h4 className="font-medium text-base">{item.title}</h4>
-                        <div className="flex gap-1.5 mt-1 flex-wrap">
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                            {item.grade ? item.grade : 'Alle Stufen'}
-                          </Badge>
-                          <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                            {item.section ? item.section : 'Alle Klassen'}
-                          </Badge>
-                        </div>
-                      </div>
+                      <h4 className="font-medium text-base">{item.title}</h4>
                       <Badge variant={priorityBadge[item.priority as AnnouncementPriority]} className="text-[10px]">
                         {priorityLabel[item.priority as AnnouncementPriority] ?? item.priority}
                       </Badge>

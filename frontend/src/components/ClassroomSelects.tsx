@@ -1,5 +1,5 @@
 import type { ClassroomFilter } from '@/types';
-import { GRADES, SECTIONS, SUBJECTS } from '@/types';
+import { SUBJECTS } from '@/types';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -19,7 +19,7 @@ export default function ClassroomSelects({ values, onChange, subjectsList }: Cla
   const activeSubjects = subjectsList || SUBJECTS;
 
   return (
-    <div className="grid gap-4 sm:grid-cols-3">
+    <div className="grid gap-4 sm:grid-cols-1 max-w-xs">
       <div className="space-y-2">
         <Label>Fach</Label>
         <Select
@@ -33,41 +33,6 @@ export default function ClassroomSelects({ values, onChange, subjectsList }: Cla
             {activeSubjects.map((subject) => (
               <SelectItem key={subject} value={subject}>
                 {subject}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label>Klasse</Label>
-        <Select value={values.grade} onValueChange={(grade) => onChange({ ...values, grade })}>
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {GRADES.map((grade) => (
-              <SelectItem key={grade} value={grade}>
-                {grade}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="space-y-2">
-        <Label>Gruppe</Label>
-        <Select
-          value={values.section}
-          onValueChange={(section) => onChange({ ...values, section })}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {SECTIONS.map((section) => (
-              <SelectItem key={section} value={section}>
-                {section}
               </SelectItem>
             ))}
           </SelectContent>

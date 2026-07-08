@@ -17,8 +17,9 @@ export type AnnouncementPriority = 'Normal' | 'Important' | 'Urgent';
 
 export type ClassroomFilter = {
   subject: string;
-  grade: string;
-  section: string;
+  // grade and section are fixed to the single demo class ("Klasse 3", "A")
+  grade?: string;
+  section?: string;
 };
 
 export type QuizPublishPayload = ClassroomFilter & {
@@ -50,8 +51,6 @@ export type Announcement = {
   title: string;
   body: string;
   priority: AnnouncementPriority;
-  grade?: string | null;
-  section?: string | null;
   read_count: number;
   created_at: string;
 };
@@ -60,13 +59,12 @@ export type AnnouncementCreate = {
   title: string;
   body: string;
   priority: AnnouncementPriority;
-  grade?: string | null;
-  section?: string | null;
 };
 
 export const SUBJECTS = ['Mathe', 'Sprache', 'Natur', 'Kunst'] as const;
-export const GRADES = ['Grade 6', 'Grade 7', 'Grade 8', 'Grade 9'] as const;
-export const SECTIONS = ['Section A', 'Section B', 'Section C'] as const;
+// Single fixed class — no grade/section selection needed
+export const DEFAULT_GRADE = 'Klasse 3';
+export const DEFAULT_SECTION = 'A';
 
 export type QuizResultResponse = {
   id: number;

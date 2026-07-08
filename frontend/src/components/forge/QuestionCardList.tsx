@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
-import { BookOpen, GraduationCap, Layers, RotateCcw, Send, Users } from 'lucide-react';
+import { BookOpen, Layers, RotateCcw, Send } from 'lucide-react';
 import type { ClassroomFilter, QuizTask, Subject, QuizResponse } from '@/types';
-import { GRADES, SECTIONS, SUBJECTS } from '@/types';
+import { DEFAULT_GRADE, DEFAULT_SECTION, SUBJECTS } from '@/types';
 import { quizApi, subjectApi } from '@/services/api';
 import QuestionCard from './QuestionCard';
 import { Button } from '@/components/ui/button';
@@ -47,8 +47,6 @@ export default function QuestionCardList({
 
   // ── Assignment state (now lives in the sidebar) ──────────
   const [selectedSubject, setSelectedSubject] = useState<string>('');
-  const [selectedGrade, setSelectedGrade] = useState<string>(GRADES[2]);
-  const [selectedSection, setSelectedSection] = useState<string>(SECTIONS[1]);
   const [levelNumber, setLevelNumber] = useState<number | null>(null);
 
   const [dbSubjects, setDbSubjects] = useState<Subject[]>([]);
@@ -87,8 +85,8 @@ export default function QuestionCardList({
 
   const classroom: ClassroomFilter = {
     subject: selectedSubject,
-    grade: selectedGrade,
-    section: selectedSection,
+    grade: DEFAULT_GRADE,
+    section: DEFAULT_SECTION,
   };
 
   const handlePublish = async () => {
@@ -103,7 +101,7 @@ export default function QuestionCardList({
     setPublishing(true);
     try {
       await quizApi.publish({ title: quizTitle.trim(), ...classroom, level_number: levelNumber, tasks });
-      toast.success(`Quiz veröffentlicht für ${selectedSubject} · ${selectedGrade} · ${selectedSection}`);
+      toast.success(`Quiz veröffentlicht für ${selectedSubject}`);
       setPublishOpen(false);
       onStartOver();
     } catch (err) {
@@ -115,7 +113,7 @@ export default function QuestionCardList({
 
   // Sidebar selectors — subject list: prefer DB subjects, fall back to static
   const subjectOptions = dbSubjects.length > 0 ? dbSubjects.map((s) => s.name) : SUBJECTS;
-  const assignmentComplete = !!selectedSubject && !!selectedGrade && !!selectedSection;
+  const assignmentComplete = !!selectedSubject;
 
   return (
     <div className="animate-fade-in grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
@@ -144,18 +142,13 @@ export default function QuestionCardList({
           </CardContent>
         </Card>
 
-        {/* Assignment card */}
         <Card className="border-primary/20 bg-primary/[0.025]">
           <CardHeader className="pb-2 pt-4 px-4">
-            <div className="flex items-center gap-1.5 text-primary">
-              <Users size={12} aria-hidden="true" />
-              <CardDescription className="text-primary font-bold text-[10px] tracking-widest uppercase m-0">Zuweisung</CardDescription>
-            </div>
+            <CardDescription className="text-primary font-bold text-[10px] tracking-widest uppercase m-0">Zuweisung</CardDescription>
             <CardTitle className="text-sm font-semibold mt-0.5">An wen geht das Quiz?</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2.5 px-4 pb-4">
 
-            {/* Subject */}
             <div className="space-y-1">
               <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
                 <BookOpen size={10} /> Fach
@@ -172,39 +165,6 @@ export default function QuestionCardList({
               </Select>
             </div>
 
-            {/* Grade + Section */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
-                  <GraduationCap size={10} /> Klasse
-                </Label>
-                <Select value={selectedGrade} onValueChange={setSelectedGrade}>
-                  <SelectTrigger className="h-8 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {GRADES.map((g) => (
-                      <SelectItem key={g} value={g} className="text-sm">{g}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Gruppe</Label>
-                <Select value={selectedSection} onValueChange={setSelectedSection}>
-                  <SelectTrigger className="h-8 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SECTIONS.map((s) => (
-                      <SelectItem key={s} value={s} className="text-sm">{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            {/* Level */}
             <div className="space-y-1">
               <Label className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground flex items-center gap-1">
                 <Layers size={10} /> App-Stufe
@@ -228,17 +188,15 @@ export default function QuestionCardList({
               </Select>
             </div>
 
-            {/* Summary pill */}
             {assignmentComplete && (
               <div className="rounded-md bg-primary/10 border border-primary/20 px-3 py-2 text-xs text-primary font-semibold flex items-center gap-1.5">
                 <span>📌</span>
-                <span className="truncate">{selectedSubject} · {selectedGrade} · {selectedSection}{currentLevel ? ` · S${currentLevel.level_number}` : ''}</span>
+                <span className="truncate">{selectedSubject}{currentLevel ? ` · Stufe ${currentLevel.level_number}` : ''}</span>
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Action buttons */}
         <div className="flex flex-col gap-2">
           <Button variant="outline" onClick={onStartOver} className="w-full h-9 text-sm">
             <RotateCcw size={14} />
